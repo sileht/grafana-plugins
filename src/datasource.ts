@@ -75,7 +75,8 @@ export default class GnocchiDatasource {
             'aggregation': target.aggregator,
             'start': options.range.from.toISOString(),
             'end': null,
-            'stop': null
+            'stop': null,
+            'granularity': null
           }
         };
         if (options.range.to){
@@ -96,6 +97,7 @@ export default class GnocchiDatasource {
         var resource_id;
         var metric_id;
         var label;
+        var granularity;
 
         try {
           metric_name = self.templateSrv.replace(target.metric_name);
@@ -104,6 +106,7 @@ export default class GnocchiDatasource {
           resource_id = self.templateSrv.replace(target.resource_id);
           metric_id = self.templateSrv.replace(target.metric_id);
           label = self.templateSrv.replace(target.label);
+          granularity = self.templateSrv.replace(target.granularity);
         } catch (err) {
           return self.$q.reject(err);
         }
@@ -119,6 +122,9 @@ export default class GnocchiDatasource {
           return self._gnocchi_request(resource_search_req).then(function(result) {
             return self.$q.all(_.map(result, function(resource) {
               var measures_req = _.merge({}, default_measures_req);
+              if (granularity !== '') {
+                  measures_req.params.granularity = granularity;
+              }
               measures_req.url = ('v1/resource/' + resource_type +
                                   '/' + resource["id"] + '/metric/' + metric_name + '/measures');
               if (!label) { label = "id" ; }

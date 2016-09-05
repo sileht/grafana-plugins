@@ -37,6 +37,10 @@
             <label class="gf-form-label query-keyword width-8">Metric name</label>
             <input type="text" class="gf-form-input" ng-model="ctrl.target.metric_name" bs-typeahead="ctrl.suggestMetricNames" spellcheck='false' placeholder="metric name" data-min-length=0 ng-model-onblur ng-blur="ctrl.queryUpdated()">
         </div>
+        <div class="gf-form max-width-20" ng-if="['resource', 'resource_search', 'resource_aggregation'].indexOf(ctrl.target.queryMode) >= 0" >
+            <label class="gf-form-label query-keyword width-8">Granularity</label>
+            <input type="text" class="gf-form-input" ng-model="ctrl.target.granularity" spellcheck='false' placeholder="seconds" data-min-length=0 ng-model-onblur ng-blur="ctrl.queryUpdated()">
+        </div>
         <div class="gf-form">
             <label class="gf-form-label query-keyword width-8">Aggregator</label>
             <select ng-model="ctrl.target.aggregator" class="gf-form-input input-small" ng-options="a for a in ctrl.aggregators" ng-change="ctrl.queryUpdated()"> </select>

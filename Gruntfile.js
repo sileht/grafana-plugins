@@ -4,7 +4,7 @@ module.exports = function(grunt) {
 
   grunt.loadNpmTasks('grunt-execute');
   grunt.loadNpmTasks('grunt-contrib-clean');
-  grunt.loadNpmTasks('grunt-typescript');
+  grunt.loadNpmTasks('grunt-ts');
   grunt.loadNpmTasks('grunt-tslint');
   grunt.loadNpmTasks('grunt-karma');
 
@@ -12,7 +12,7 @@ module.exports = function(grunt) {
 
     clean: ["dist/*"],
 
-    typescript: {
+    ts: {
       dist: {
           src: ['src/**/*.ts'],
           dest: 'dist/',
@@ -72,6 +72,6 @@ module.exports = function(grunt) {
       'copy:sources',
       'copy:plugin',
       'copy:staticContent',
-      'typescript:dist',
+      'ts:dist',
       'karma:test']);
 };

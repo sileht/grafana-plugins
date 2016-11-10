@@ -100,13 +100,13 @@ export default class GnocchiDatasource {
         var granularity;
 
         try {
-          metric_name = self.templateSrv.replace(target.metric_name);
-          resource_search = self.templateSrv.replace(target.resource_search);
-          resource_type = self.templateSrv.replace(target.resource_type);
-          resource_id = self.templateSrv.replace(target.resource_id);
-          metric_id = self.templateSrv.replace(target.metric_id);
-          label = self.templateSrv.replace(target.label);
-          granularity = self.templateSrv.replace(target.granularity);
+          metric_name = self.templateSrv.replace(target.metric_name, options.scopedVars);
+          resource_search = self.templateSrv.replace(target.resource_search, options.scopedVars);
+          resource_type = self.templateSrv.replace(target.resource_type, options.scopedVars);
+          resource_id = self.templateSrv.replace(target.resource_id, options.scopedVars);
+          metric_id = self.templateSrv.replace(target.metric_id, options.scopedVars);
+          label = self.templateSrv.replace(target.label, options.scopedVars);
+          granularity = self.templateSrv.replace(target.granularity, options.scopedVars);
         } catch (err) {
           return self.$q.reject(err);
         }

@@ -241,8 +241,15 @@ export default class GnocchiDatasource {
           return self.$q.reject(err);
         }
         return self._gnocchi_request(req).then(function(result) {
-          return _.map(result, function(resource) {
-            return { text: resource[resourceQuery[2]] };
+          var values = _.map(result, function(resource) {
+            var value = resource[resourceQuery[2]];
+            if ( resourceQuery[2] === "metrics" ){
+              value = _.keys(value);
+            }
+            return value;
+          });
+          return _.map(_.flatten(values), function(value) {
+            return { text: value };
           });
         });
       }

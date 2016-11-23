@@ -9,7 +9,8 @@
     "angular": "registry:dt/angular#1.5.0+20160517064839",
     "es6-shim": "registry:dt/es6-shim#0.31.2+20160317120654",
     "jquery": "registry:dt/jquery#1.10.0+20160417213236",
-    "lodash": "registry:dt/lodash#3.10.0+20160330154726"
+    "lodash": "registry:dt/lodash#3.10.0+20160330154726",
+    "moment": "registry:dt/moment#2.11.1+20161010105546"
   },
   "dependencies": {}
 }

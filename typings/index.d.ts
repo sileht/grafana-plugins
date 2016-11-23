@@ -5,5 +5,5 @@
 /// <reference path="globals/jquery/index.d.ts" />
 /// <reference path="globals/lodash/index.d.ts" />
 /// <reference path="globals/mocha/index.d.ts" />
+/// <reference path="globals/moment/index.d.ts" />
 /// <reference path="globals/q/index.d.ts" />
-/// <reference path="modules/moment/index.d.ts" />

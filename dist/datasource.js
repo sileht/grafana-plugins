@@ -106,7 +106,12 @@ var GnocchiDatasource = (function () {
                         if (!label) {
                             label = "id";
                         }
-                        return self._retrieve_measures(resource[label] || "attribute " + label + " not found", measures_req);
+                        var label_str = resource[label] || "attribute " + label + " not found";
+                        var name_str = resource["display_name"] || resource["name"] || "undefined";
+                        if (( name_str !== "undefined" ) && ( label !== "display_name" && label !== "name" )) {
+                            return self._retrieve_measures(label_str + " (" + name_str + ")", measures_req);
+                        }
+                        return self._retrieve_measures(label_str, measures_req);
                     }));
                 });
             }

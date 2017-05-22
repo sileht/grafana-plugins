@@ -1,3 +1,4 @@
+"use strict";
 var datasource_1 = require('./datasource');
 exports.Datasource = datasource_1.default;
 var query_ctrl_1 = require('./query_ctrl');
@@ -7,13 +8,13 @@ var GnocchiConfigCtrl = (function () {
     }
     GnocchiConfigCtrl.templateUrl = 'partials/config.html';
     return GnocchiConfigCtrl;
-})();
+}());
 exports.ConfigCtrl = GnocchiConfigCtrl;
 var GnocchiQueryOptionsCtrl = (function () {
     function GnocchiQueryOptionsCtrl() {
     }
     GnocchiQueryOptionsCtrl.templateUrl = 'partials/query.options.html';
     return GnocchiQueryOptionsCtrl;
-})();
+}());
 exports.QueryOptionsCtrl = GnocchiQueryOptionsCtrl;
 //# sourceMappingURL=module.js.map

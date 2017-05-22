@@ -1,6 +1,6 @@
 # Grafana Gnocchi datasource [![Travis CI](https://travis-ci.org/sileht/grafana-gnocchi-datasource.png?branch=master)](https://travis-ci.org/sileht/grafana-gnocchi-datasource)
 
-Gnocchi datasource for Grafana 3.x
+Gnocchi datasource for Grafana 3 and 4
 
 ## Installation via grafana.net
 

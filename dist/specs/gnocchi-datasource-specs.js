@@ -1,4 +1,5 @@
 ///<reference path="../../typings/index.d.ts" />
+"use strict";
 var module_1 = require("../module");
 var backendsrv_1 = require("./mocks/backendsrv");
 var templatesrv_1 = require("./mocks/templatesrv");
@@ -35,11 +36,11 @@ describe('GnocchiDatasource', function () {
                 pre_assert();
             }
             $httpBackend.expect(method, url, data, headers).respond([
-                ["2014-10-06T14:00:00", "600.0", "7"],
-                ["2014-10-06T14:20:00", "600.0", "5"],
-                ["2014-10-06T14:33:00", "60.0", "43.1"],
-                ["2014-10-06T14:34:00", "60.0", "12"],
-                ["2014-10-06T14:36:00", "60.0", "2"]
+                ["2014-10-06T14:00:00+00:00", "600.0", "7"],
+                ["2014-10-06T14:20:00+00:00", "600.0", "5"],
+                ["2014-10-06T14:33:00+00:00", "60.0", "43.1"],
+                ["2014-10-06T14:34:00+00:00", "60.0", "12"],
+                ["2014-10-06T14:36:00+00:00", "60.0", "2"]
             ]);
             if (post_assert) {
                 post_assert();
@@ -90,7 +91,7 @@ describe('GnocchiDatasource', function () {
                 resource_type: 'instance', label: 'my_aggregation', metric_name: 'cpu_util', aggregator: 'max' }], 'POST', "/v1/aggregation/resource/instance/metric/cpu_util?" +
             "aggregation=max&end=2014-04-20T03:20:10.000Z&start=2014-04-10T03:20:10.000Z&stop=2014-04-20T03:20:10.000Z", { "=": { "server_group": "autoscalig_group" } }, 'my_aggregation', null, null);
     });
-    describe('Resource search', function () {
+    describe('Resource search JSON', function () {
         var query = {
             range: { from: moment.utc([2014, 3, 10, 3, 20, 10]), to: moment.utc([2014, 3, 20, 3, 20, 10]) },
             targets: [{ hide: false, queryMode: 'resource_search', resource_search: '{"=": {"server_group": "autoscalig_group"}}',
@@ -119,20 +120,84 @@ describe('GnocchiDatasource', function () {
         var url_expected_get_measures1 = "/v1/resource/instance/6868da77-fa82-4e67-aba9-270c5ae8cbca/metric/cpu_util/measures?" +
             "aggregation=max&end=2014-04-20T03:20:10.000Z&start=2014-04-10T03:20:10.000Z&stop=2014-04-20T03:20:10.000Z";
         var response_get_measures1 = [
-            ["2014-10-06T14:33:57", "60.0", "43.1"],
-            ["2014-10-06T14:34:12", "60.0", "12"],
-            ["2014-10-06T14:34:20", "60.0", "2"],
+            ["2014-10-06T14:33:57+00:00", "60.0", "43.1"],
+            ["2014-10-06T14:34:12+00:00", "60.0", "12"],
+            ["2014-10-06T14:34:20+00:00", "60.0", "2"],
         ];
         var url_expected_get_measures2 = "/v1/resource/instance/f898ba55-bbea-460f-985c-3d1243348304/metric/cpu_util/measures?" +
             "aggregation=max&end=2014-04-20T03:20:10.000Z&start=2014-04-10T03:20:10.000Z&stop=2014-04-20T03:20:10.000Z";
         var response_get_measures2 = [
-            ["2014-10-06T14:33:57", "60.0", "22.1"],
-            ["2014-10-06T14:34:12", "60.0", "3"],
-            ["2014-10-06T14:34:20", "60.0", "30"],
+            ["2014-10-06T14:33:57+00:00", "60.0", "22.1"],
+            ["2014-10-06T14:34:12+00:00", "60.0", "3"],
+            ["2014-10-06T14:34:20+00:00", "60.0", "30"],
         ];
         var results;
         beforeEach(function () {
             $httpBackend.expect('POST', url_expected_search_resources).respond(response_search_resources);
+            $httpBackend.expect('GET', url_expected_get_measures1).respond(response_get_measures1);
+            $httpBackend.expect('GET', url_expected_get_measures2).respond(response_get_measures2);
+            ds.query(query).then(function (data) { results = data; });
+            $httpBackend.flush();
+        });
+        it("nothing more", function () {
+            $httpBackend.verifyNoOutstandingExpectation();
+            $httpBackend.verifyNoOutstandingRequest();
+        });
+        it('should return series list', function () {
+            expect(results.data.length).to.be(2);
+            expect(results.data[0].target).to.be('myfirstvm');
+            expect(results.data[1].target).to.be('mysecondvm');
+            expect(results.data[0].datapoints[0][0]).to.be('43.1');
+            expect(results.data[0].datapoints[0][1]).to.be(1412606037000);
+            expect(results.data[0].datapoints[1][0]).to.be('12');
+            expect(results.data[0].datapoints[1][1]).to.be(1412606052000);
+            expect(results.data[0].datapoints[2][0]).to.be('2');
+            expect(results.data[0].datapoints[2][1]).to.be(1412606060000);
+        });
+    });
+    describe('Resource search filter expression', function () {
+        var query = {
+            range: { from: moment.utc([2014, 3, 10, 3, 20, 10]), to: moment.utc([2014, 3, 20, 3, 20, 10]) },
+            targets: [{ hide: false, queryMode: 'resource_search', resource_search: 'server_group="autoscalig_group"',
+                    resource_type: 'instance', label: 'display_name', metric_name: 'cpu_util', aggregator: 'max' }],
+            interval: '1s'
+        };
+        var url_expected_search_resources = "/v1/search/resource/instance?filter=server_group%253D%2522autoscalig_group%2522";
+        var response_search_resources = [
+            {
+                "display_name": "myfirstvm",
+                "host": "compute1",
+                "id": "6868da77-fa82-4e67-aba9-270c5ae8cbca",
+                "image_ref": "http://image",
+                "type": "instance",
+                "server_group": "autoscalig_group",
+            },
+            {
+                "display_name": "mysecondvm",
+                "host": "compute1",
+                "id": "f898ba55-bbea-460f-985c-3d1243348304",
+                "image_ref": "http://image",
+                "type": "instance",
+                "server_group": "autoscalig_group",
+            }
+        ];
+        var url_expected_get_measures1 = "/v1/resource/instance/6868da77-fa82-4e67-aba9-270c5ae8cbca/metric/cpu_util/measures?" +
+            "aggregation=max&end=2014-04-20T03:20:10.000Z&start=2014-04-10T03:20:10.000Z&stop=2014-04-20T03:20:10.000Z";
+        var response_get_measures1 = [
+            ["2014-10-06T14:33:57+00:00", "60.0", "43.1"],
+            ["2014-10-06T14:34:12+00:00", "60.0", "12"],
+            ["2014-10-06T14:34:20+00:00", "60.0", "2"],
+        ];
+        var url_expected_get_measures2 = "/v1/resource/instance/f898ba55-bbea-460f-985c-3d1243348304/metric/cpu_util/measures?" +
+            "aggregation=max&end=2014-04-20T03:20:10.000Z&start=2014-04-10T03:20:10.000Z&stop=2014-04-20T03:20:10.000Z";
+        var response_get_measures2 = [
+            ["2014-10-06T14:33:57+00:00", "60.0", "22.1"],
+            ["2014-10-06T14:34:12+00:00", "60.0", "3"],
+            ["2014-10-06T14:34:20+00:00", "60.0", "30"],
+        ];
+        var results;
+        beforeEach(function () {
+            $httpBackend.expect('GET', url_expected_search_resources).respond(response_search_resources);
             $httpBackend.expect('GET', url_expected_get_measures1).respond(response_get_measures1);
             $httpBackend.expect('GET', url_expected_get_measures2).respond(response_get_measures2);
             ds.query(query).then(function (data) { results = data; });

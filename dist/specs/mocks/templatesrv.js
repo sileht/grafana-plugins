@@ -1,3 +1,4 @@
+"use strict";
 ///<reference path="../../../typings/index.d.ts" />
 //
 var TemplateSrvMock = (function () {
@@ -7,7 +8,7 @@ var TemplateSrvMock = (function () {
         return value;
     };
     return TemplateSrvMock;
-})();
+}());
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = TemplateSrvMock;
 //# sourceMappingURL=templatesrv.js.map

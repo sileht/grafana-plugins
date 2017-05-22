@@ -1,4 +1,5 @@
 ///<reference path="../typings/index.d.ts" />
+"use strict";
 var moment = require("moment");
 var GnocchiDatasource = (function () {
     function GnocchiDatasource(instanceSettings, $q, backendSrv, templateSrv) {
@@ -60,7 +61,8 @@ var GnocchiDatasource = (function () {
                     'aggregation': target.aggregator,
                     'start': options.range.from.toISOString(),
                     'end': null,
-                    'stop': null
+                    'stop': null,
+                    'granularity': null
                 }
             };
             if (options.range.to) {
@@ -80,38 +82,51 @@ var GnocchiDatasource = (function () {
             var resource_id;
             var metric_id;
             var label;
+            var granularity;
             try {
-                metric_name = self.templateSrv.replace(target.metric_name);
-                resource_search = self.templateSrv.replace(target.resource_search);
-                resource_type = self.templateSrv.replace(target.resource_type);
-                resource_id = self.templateSrv.replace(target.resource_id);
-                metric_id = self.templateSrv.replace(target.metric_id);
-                label = self.templateSrv.replace(target.label);
+                metric_name = self.templateSrv.replace(target.metric_name, options.scopedVars);
+                resource_search = self.templateSrv.replace(target.resource_search, options.scopedVars);
+                resource_type = self.templateSrv.replace(target.resource_type, options.scopedVars);
+                resource_id = self.templateSrv.replace(target.resource_id, options.scopedVars);
+                metric_id = self.templateSrv.replace(target.metric_id, options.scopedVars);
+                label = self.templateSrv.replace(target.label, options.scopedVars);
+                granularity = self.templateSrv.replace(target.granularity, options.scopedVars);
             }
             catch (err) {
                 return self.$q.reject(err);
             }
             resource_type = resource_type || "generic";
             if (target.queryMode === "resource_search") {
-                var resource_search_req = {
-                    url: 'v1/search/resource/' + resource_type,
-                    method: 'POST',
-                    data: resource_search
-                };
+                var resource_search_req;
+                // Json query or filter expression
+                if (resource_search.trim()[0] === '{') {
+                    resource_search_req = {
+                        url: 'v1/search/resource/' + resource_type,
+                        method: 'POST',
+                        data: resource_search,
+                    };
+                }
+                else {
+                    resource_search_req = {
+                        url: 'v1/search/resource/' + resource_type,
+                        method: 'GET',
+                        params: {
+                            filter: encodeURIComponent(resource_search),
+                        }
+                    };
+                }
                 return self._gnocchi_request(resource_search_req).then(function (result) {
                     return self.$q.all(_.map(result, function (resource) {
                         var measures_req = _.merge({}, default_measures_req);
+                        if (granularity !== '') {
+                            measures_req.params.granularity = granularity;
+                        }
                         measures_req.url = ('v1/resource/' + resource_type +
                             '/' + resource["id"] + '/metric/' + metric_name + '/measures');
                         if (!label) {
                             label = "id";
                         }
-                        var label_str = resource[label] || "attribute " + label + " not found";
-                        var name_str = resource["display_name"] || resource["name"] || "undefined";
-                        if (( name_str !== "undefined" ) && ( label !== "display_name" && label !== "name" )) {
-                            return self._retrieve_measures(label_str + " (" + name_str + ")", measures_req);
-                        }
-                        return self._retrieve_measures(label_str, measures_req);
+                        return self._retrieve_measures(resource[label] || "attribute " + label + " not found", measures_req);
                     }));
                 });
             }
@@ -226,8 +241,15 @@ var GnocchiDatasource = (function () {
                 return self.$q.reject(err);
             }
             return self._gnocchi_request(req).then(function (result) {
-                return _.map(result, function (resource) {
-                    return { text: resource[resourceQuery[2]] };
+                var values = _.map(result, function (resource) {
+                    var value = resource[resourceQuery[2]];
+                    if (resourceQuery[2] === "metrics") {
+                        value = _.keys(value);
+                    }
+                    return value;
+                });
+                return _.map(_.flatten(values), function (value) {
+                    return { text: value };
                 });
             });
         }
@@ -473,7 +495,7 @@ var GnocchiDatasource = (function () {
         });
     };
     return GnocchiDatasource;
-})();
+}());
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = GnocchiDatasource;
 //# sourceMappingURL=datasource.js.map

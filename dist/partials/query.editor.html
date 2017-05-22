@@ -17,7 +17,7 @@
     <div ng-if="['resource_search', 'resource_aggregation'].indexOf(ctrl.target.queryMode) >= 0" class="gf-form-inline">
         <div class="gf-form max-width">
             <label class="gf-form-label query-keyword width-8">Query</label>
-            <input type="text" class="gf-form-input" ng-model="ctrl.target.resource_search" spellcheck='false' placeholder="json query" data-min-length=0 ng-model-onblur ng-blur="ctrl.queryUpdated()" >
+            <input type="text" class="gf-form-input" ng-model="ctrl.target.resource_search" spellcheck='false' placeholder="attribute1='value' and attribute2='%contain%'" data-min-length=0 ng-model-onblur ng-blur="ctrl.queryUpdated()" >
         </div>
     </div>
     <div class="gf-form-inline">
@@ -36,6 +36,10 @@
         <div class="gf-form max-width-20" ng-if="['resource', 'resource_search', 'resource_aggregation'].indexOf(ctrl.target.queryMode) >= 0">
             <label class="gf-form-label query-keyword width-8">Metric name</label>
             <input type="text" class="gf-form-input" ng-model="ctrl.target.metric_name" bs-typeahead="ctrl.suggestMetricNames" spellcheck='false' placeholder="metric name" data-min-length=0 ng-model-onblur ng-blur="ctrl.queryUpdated()">
+        </div>
+        <div class="gf-form max-width-20" ng-if="['resource', 'resource_search', 'resource_aggregation'].indexOf(ctrl.target.queryMode) >= 0" >
+            <label class="gf-form-label query-keyword width-8">Granularity</label>
+            <input type="text" class="gf-form-input" ng-model="ctrl.target.granularity" spellcheck='false' placeholder="seconds" data-min-length=0 ng-model-onblur ng-blur="ctrl.queryUpdated()">
         </div>
         <div class="gf-form">
             <label class="gf-form-label query-keyword width-8">Aggregator</label>

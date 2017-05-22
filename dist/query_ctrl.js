@@ -1,4 +1,5 @@
 ///<reference path="../typings/index.d.ts" />
+"use strict";
 var GnocchiDatasourceQueryCtrl = (function () {
     function GnocchiDatasourceQueryCtrl($scope, $injector) {
         var _this = this;
@@ -58,6 +59,6 @@ var GnocchiDatasourceQueryCtrl = (function () {
     };
     GnocchiDatasourceQueryCtrl.templateUrl = 'partials/query.editor.html';
     return GnocchiDatasourceQueryCtrl;
-})();
+}());
 exports.GnocchiDatasourceQueryCtrl = GnocchiDatasourceQueryCtrl;
 //# sourceMappingURL=query_ctrl.js.map

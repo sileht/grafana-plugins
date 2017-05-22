@@ -114,11 +114,24 @@ export default class GnocchiDatasource {
         resource_type = resource_type || "generic";
 
         if (target.queryMode === "resource_search") {
-          var resource_search_req = {
-            url: 'v1/search/resource/' + resource_type,
-            method: 'POST',
-            data: resource_search
-          };
+          var resource_search_req;
+
+          // Json query or filter expression
+          if (resource_search.trim()[0] === '{') {
+            resource_search_req = {
+              url: 'v1/search/resource/' + resource_type,
+              method: 'POST',
+              data: resource_search,
+            };
+          } else {
+            resource_search_req = {
+              url: 'v1/search/resource/' + resource_type,
+              method: 'GET',
+              params: {
+                filter: encodeURIComponent(resource_search),
+              }
+            };
+          }
           return self._gnocchi_request(resource_search_req).then(function(result) {
             return self.$q.all(_.map(result, function(resource) {
               var measures_req = _.merge({}, default_measures_req);

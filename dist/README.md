@@ -1,10 +1,10 @@
-# Grafana Gnocchi datasource [![Travis CI](https://travis-ci.org/sileht/grafana-gnocchi-datasource.png?branch=master)](https://travis-ci.org/sileht/grafana-gnocchi-datasource)
+# Grafana Gnocchi datasource [![Travis CI](https://travis-ci.org/gnocchixyz/grafana-gnocchi-datasource.png?branch=master)](https://travis-ci.org/gnocchixyz/grafana-gnocchi-datasource)
 
 Gnocchi datasource for Grafana 3 and 4
 
 ## Installation via grafana.net
 
-    $ sudo grafana-cli plugins install sileht-gnocchi-datasource
+    $ sudo grafana-cli plugins install gnocchixyz-gnocchi-datasource
 
 
 ## Installation from sources
@@ -19,7 +19,7 @@ Gnocchi datasource for Grafana 3 and 4
 
 ## Configuration Panel
 
-![](https://raw.githubusercontent.com/sileht/grafana-gnocchi-datasource/master/docs/add_datasource_gnocchi.png)
+![](https://raw.githubusercontent.com/gnocchixyz/grafana-gnocchi-datasource/master/docs/add_datasource_gnocchi.png)
 
 Name | Description
 ------------ | -------------
@@ -44,14 +44,14 @@ The editor have 4 modes to retreives metrics, you can change the mode by clickin
 * Measurements of a metric:
   Create one graph with datapoint of the defined metric
 
-  ![](https://raw.githubusercontent.com/sileht/grafana-gnocchi-datasource/master/docs/gnocchi_query_mode1.png)
+  ![](https://raw.githubusercontent.com/gnocchixyz/grafana-gnocchi-datasource/master/docs/gnocchi_query_mode1.png)
 
   Metric ID: the id of the metric you are interrested in
 
 * Measurements of a metric of a resource:
   Create one graph with datapoint of the metric of the defined resource.
 
-  ![](https://raw.githubusercontent.com/sileht/grafana-gnocchi-datasource/master/docs/gnocchi_query_mode2.png)
+  ![](https://raw.githubusercontent.com/gnocchixyz/grafana-gnocchi-datasource/master/docs/gnocchi_query_mode2.png)
 
   Resource ID: the id of the resource
   Resource type: the type of the resource (generic, instance, disk, ...)
@@ -60,7 +60,7 @@ The editor have 4 modes to retreives metrics, you can change the mode by clickin
 * Measurements of a metric of multiple resources:
   Create one graph per metric find with the query.
 
-  ![](https://raw.githubusercontent.com/sileht/grafana-gnocchi-datasource/master/docs/gnocchi_query_mode3.png)
+  ![](https://raw.githubusercontent.com/gnocchixyz/grafana-gnocchi-datasource/master/docs/gnocchi_query_mode3.png)
 
   Query: the query to search resources
   Resource type: the type of the resource (generic, instance, disk, ...)
@@ -70,7 +70,7 @@ The editor have 4 modes to retreives metrics, you can change the mode by clickin
 * Aggregated measurements of a metric across resources:
   Create one graph with an aggregation of all datapoints of metrics that match the query.
 
-  ![](https://raw.githubusercontent.com/sileht/grafana-gnocchi-datasource/master/docs/gnocchi_query_mode4.png)
+  ![](https://raw.githubusercontent.com/gnocchixyz/grafana-gnocchi-datasource/master/docs/gnocchi_query_mode4.png)
 
   Query: the query to search resources
   Resource type: the type of the resource (generic, instance, disk, ...)

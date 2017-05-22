@@ -15,7 +15,7 @@ version=$(inc_version $version)
 [ ! "$GITHUB_TOKEN" ] && error "GITHUB_TOKEN is missing"
 [ "$(get_version plugin.json)" != "$version" ] && error "plugin.json incorrect version"
 [ "$(get_version package.json)" != "$version" ] && error "package.json incorrect version"
-status=$(git status -sz)                                                                                                                
+status=$(git status -sz)
 [ -z "$status" ] || error "Repo is not clean"
 
 echo "Building version $version"
@@ -26,13 +26,13 @@ echo
 echo "release: ${version} ? "
 echo
 
-read 
+read
 
 git add -f dist/*
 git commit -m "Release version $version" dist/
 
-cp -a dist sileht-gnocchi-datasource
-tar -czf sileht-gnocchi-datasource-${version}.tar.gz sileht-gnocchi-datasource
+cp -a dist gnocchixyz-gnocchi-datasource
+tar -czf gnocchixyz-gnocchi-datasource-${version}.tar.gz gnocchixyz-gnocchi-datasource
 
 git tag $version -m "Release version $version"
 git push
@@ -43,7 +43,7 @@ sed -i 's/"version": "'$version'"/"version": "'$nextversion'"/' plugin.json pack
 git commit -m "Bump version $nextversion" plugin.json package.json 
 git push
 
-github-release release -u sileht -r grafana-gnocchi-datasource --tag $version --description "Release $version for Grafana 3.x"
-github-release upload  -u sileht -r grafana-gnocchi-datasource --tag $version --name sileht-gnocchi-datasource-${version}.tar.gz --file sileht-gnocchi-datasource-${version}.tar.gz
+github-release release -u gnocchixyz -r grafana-gnocchi-datasource --tag $version --description "Release $version for Grafana 3 and 4"
+github-release upload  -u gnocchixyz -r grafana-gnocchi-datasource --tag $version --name gnocchixyz-gnocchi-datasource-${version}.tar.gz --file gnocchixyz-gnocchi-datasource-${version}.tar.gz
 
-rm -rf sileht-gnocchi-datasource*
+rm -rf gnocchixyz-gnocchi-datasource*

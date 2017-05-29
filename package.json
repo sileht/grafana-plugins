@@ -1,7 +1,7 @@
 {
   "name": "gnocchixyz-gnocchi-datasource",
   "private": true,
-  "version": "1.0.9",
+  "version": "1.0.10",
   "description": "Grafana datasource for Gnocchi",
   "repository": {
     "type": "git",

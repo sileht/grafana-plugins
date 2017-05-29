@@ -17,8 +17,8 @@
       "url": "https://github.com/gnocchixyz"
     },
     "logos": {
-        "small": "docs/gnocchi-logo.jpg",
-        "large": "docs/gnocchi-logo.jpg"
+        "small": "docs/gnocchi-logo.png",
+        "large": "docs/gnocchi-logo.png"
     },
     "links": [
       {"name": "GitHub", "url": "https://github.com/gnocchixyz/grafana-datasource-gnocchi"},
@@ -27,7 +27,7 @@
     ],
     "screenshots": [
     ],
-    "version": "1.0.8",
+    "version": "1.0.9",
     "updated": "2016-07-04"
   },
 

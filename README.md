@@ -79,9 +79,10 @@ The editor have 4 modes to retreives metrics, you can change the mode by clickin
 
 Each mode also have the aggregator method to use to get datapoints of the metrics.
 
-For details of `Query` format, please refer to the Gnocchi documentations.
+For details of `Query` format, please refer to the Gnocchi and Gnocchi client documentations.
 
-- [Search for resource - Gnocchi Documentation](http://gnocchi.xyz/rest.html#searching-for-resources).
+- [Search for resource - Gnocchi client Documentation](http://gnocchi.xyz/gnocchiclient/shell.html#gnocchi-resource-search) for expression format
+- [Search for resource - Gnocchi Documentation](http://gnocchi.xyz/rest.html#searching-for-resources) for the raw json format.
 
 ## Templated queries
 
@@ -92,9 +93,10 @@ Name | Description
 `metrics(resource_id)`  | Returns a list of metrics avialable for the resource identified by ‘resource_id’
 `resources(resource_type, `attribute`, query)` | Returns a list of resource `attribute` matching `query`.
 
-For details of `query` format, please refer to the Gnocchi documentations.
+For details of `Query` format, please refer to the Gnocchi and Gnocchi client documentations.
 
-- [Searching for resources - Gnocchi documentation](http://gnocchi.xyz/rest.html#searching-for-resources).
+- [Search for resource - Gnocchi client Documentation](http://gnocchi.xyz/gnocchiclient/shell.html#gnocchi-resource-search) for expression format
+- [Search for resource - Gnocchi Documentation](http://gnocchi.xyz/rest.html#searching-for-resources) for the raw json format.
 
 ## Current Limitation
 

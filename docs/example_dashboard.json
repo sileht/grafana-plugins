@@ -5,7 +5,7 @@
       "label": "Gnocchi_Admin",
       "description": "",
       "type": "datasource",
-      "pluginId": "sileht-gnocchi-datasource",
+      "pluginId": "gnocchixyz-gnocchi-datasource",
       "pluginName": "Gnocchi"
     }
   ],

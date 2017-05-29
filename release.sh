@@ -8,8 +8,12 @@ inc_version() { echo $1 | gawk -F"." '{$NF+=1}{print $0RT}' OFS="." ORS="" ;}
 get_version() { sed -n 's/.*"version": "\([^"]*\)".*/\1/gp' $1 ; }
 error() { echo $1 ; exit 1 ; }
 
-version=$(git tag | tail -1)
-version=$(inc_version $version)
+if [ "$1" ] ; then
+    version="$1"
+else
+    version=$(git tag | tail -1)
+    version=$(inc_version $version)
+fi
 
 # Sanity checks
 [ ! "$GITHUB_TOKEN" ] && error "GITHUB_TOKEN is missing"

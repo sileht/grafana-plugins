@@ -24,9 +24,9 @@
     },
     {
       "type": "datasource",
-      "id": "sileht-gnocchi-datasource",
+      "id": "gnocchixyz-gnocchi-datasource",
       "name": "Gnocchi",
-      "version": "1.0.6"
+      "version": "1.0.9"
     }
   ],
   "id": null,

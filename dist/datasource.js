@@ -13,7 +13,10 @@ var GnocchiDatasource = (function () {
         self.default_headers = {
             'Content-Type': 'application/json',
         };
+        self.keystone_endpoint = null;
+        self.url = self.sanitize_url(instanceSettings.url);
         if (instanceSettings.jsonData) {
+            self.auth_mode = instanceSettings.jsonData.mode;
             self.project = instanceSettings.jsonData.project;
             self.username = instanceSettings.jsonData.username;
             self.password = instanceSettings.jsonData.password;
@@ -22,27 +25,29 @@ var GnocchiDatasource = (function () {
             if (self.domain === undefined || self.domain === "") {
                 self.domain = 'default';
             }
-            if (self.roles === undefined || self.roles === "") {
-                self.roles = 'admin';
-            }
+        }
+        if (self.roles === undefined || self.roles === "") {
+            self.roles = 'admin';
+        }
+        if (instanceSettings.basicAuth || instanceSettings.withCredentials) {
+            self.withCredentials = true;
         }
         // If the URL starts with http, we are in direct mode
-        if (instanceSettings.jsonData.mode === "keystone") {
-            self.url = null;
-            self.keystone_endpoint = self.sanitize_url(instanceSettings.url);
+        if (instanceSettings.basicAuth) {
+            self.default_headers["Authorization"] = instanceSettings.basicAuth;
         }
-        else if (instanceSettings.jsonData.mode === "token") {
-            self.url = self.sanitize_url(instanceSettings.url);
-            self.keystone_endpoint = null;
+        else if (self.auth_mode === "token") {
             self.default_headers['X-Auth-Token'] = instanceSettings.jsonData.token;
         }
-        else {
-            self.url = self.sanitize_url(instanceSettings.url);
-            self.keystone_endpoint = null;
+        else if (self.auth_mode === "noauth") {
             self.default_headers['X-Project-Id'] = self.project;
             self.default_headers['X-User-Id'] = self.username;
             self.default_headers['X-Domain-Id'] = self.domain;
             self.default_headers['X-Roles'] = self.roles;
+        }
+        else if (self.auth_mode === "keystone") {
+            self.url = null;
+            self.keystone_endpoint = self.sanitize_url(instanceSettings.url);
         }
     }
     ////////////////
@@ -62,7 +67,8 @@ var GnocchiDatasource = (function () {
                     'start': options.range.from.toISOString(),
                     'end': null,
                     'stop': null,
-                    'granularity': null
+                    'granularity': null,
+                    'filter': null
                 }
             };
             if (options.range.to) {
@@ -97,24 +103,7 @@ var GnocchiDatasource = (function () {
             }
             resource_type = resource_type || "generic";
             if (target.queryMode === "resource_search") {
-                var resource_search_req;
-                // Json query or filter expression
-                if (resource_search.trim()[0] === '{') {
-                    resource_search_req = {
-                        url: 'v1/search/resource/' + resource_type,
-                        method: 'POST',
-                        data: resource_search,
-                    };
-                }
-                else {
-                    resource_search_req = {
-                        url: 'v1/search/resource/' + resource_type,
-                        method: 'GET',
-                        params: {
-                            filter: encodeURIComponent(resource_search),
-                        }
-                    };
-                }
+                var resource_search_req = self.buildQueryRequest(resource_type, resource_search);
                 return self._gnocchi_request(resource_search_req).then(function (result) {
                     return self.$q.all(_.map(result, function (resource) {
                         var measures_req = _.merge({}, default_measures_req);
@@ -134,7 +123,12 @@ var GnocchiDatasource = (function () {
                 default_measures_req.url = ('v1/aggregation/resource/' +
                     resource_type + '/metric/' + metric_name);
                 default_measures_req.method = 'POST';
-                default_measures_req.data = resource_search;
+                if (resource_search.trim()[0] === '{') {
+                    default_measures_req.data = resource_search;
+                }
+                else {
+                    default_measures_req.params.filter = resource_search;
+                }
                 return self._retrieve_measures(label || "unlabeled", default_measures_req);
             }
             else if (target.queryMode === "resource") {
@@ -229,16 +223,25 @@ var GnocchiDatasource = (function () {
     };
     GnocchiDatasource.prototype.metricFindQuery = function (query) {
         var self = this;
-        var req = { method: 'POST', url: null, data: null };
+        var req = { method: 'POST', url: null, data: null, params: { filter: null } };
         var resourceQuery = query.match(/^resources\(([^,]*),\s?([^,]*),\s?([^\)]+?)\)/);
         if (resourceQuery) {
+            var resource_search;
             try {
-                // Ensure self is json
-                req.data = self.templateSrv.replace(angular.toJson(angular.fromJson(resourceQuery[3])));
                 req.url = self.templateSrv.replace('v1/search/resource/' + resourceQuery[1]);
+                resource_search = self.templateSrv.replace(resourceQuery[3]);
+                if (resource_search.trim()[0] === '{') {
+                    angular.toJson(angular.fromJson(resource_search));
+                }
             }
             catch (err) {
                 return self.$q.reject(err);
+            }
+            if (resource_search.trim()[0] === '{') {
+                req.data = resource_search;
+            }
+            else {
+                req.params.filter = resource_search;
             }
             return self._gnocchi_request(req).then(function (result) {
                 var values = _.map(result, function (resource) {
@@ -289,19 +292,37 @@ var GnocchiDatasource = (function () {
     ////////////////
     /// Query
     ////////////////
+    GnocchiDatasource.prototype.buildQueryRequest = function (resource_type, resource_search) {
+        var self = this;
+        var resource_search_req;
+        resource_type = resource_type || 'generic';
+        if (resource_search.trim()[0] === '{') {
+            resource_search_req = {
+                url: 'v1/search/resource/' + resource_type,
+                method: 'POST',
+                data: resource_search,
+            };
+        }
+        else {
+            resource_search_req = {
+                url: 'v1/search/resource/' + resource_type,
+                method: 'POST',
+                params: {
+                    filter: resource_search,
+                }
+            };
+        }
+        return resource_search_req;
+    };
     GnocchiDatasource.prototype.validateSearchTarget = function (target) {
         var self = this;
-        var resource_search_req = {
-            url: 'v1/search/resource/' + (target.resource_type || 'generic'),
-            method: 'POST',
-            data: target.resource_search,
-        };
-        return self._gnocchi_request(resource_search_req);
+        return self._gnocchi_request(self.buildQueryRequest(target.resource_type, target.resource_search));
     };
     //////////////////////
     /// Utils
     //////////////////////
     GnocchiDatasource.prototype.validateTarget = function (target, syntax_only) {
+        // FIXME(sileht): When syntax_only is false, we should do template interpolation
         var self = this;
         var mandatory = [];
         switch (target.queryMode) {
@@ -322,6 +343,14 @@ var GnocchiDatasource = (function () {
             case "resource_search":
                 if (!target.resource_search) {
                     mandatory.push("Query");
+                }
+                else if (target.resource_search.trim()[0] === '{') {
+                    try {
+                        angular.toJson(angular.fromJson(target.resource_search));
+                    }
+                    catch (err) {
+                        mandatory.push("Query");
+                    }
                 }
                 if (!target.metric_name) {
                     mandatory.push("Metric name");
@@ -369,7 +398,8 @@ var GnocchiDatasource = (function () {
             var options = {
                 url: null,
                 method: null,
-                headers: null
+                headers: null,
+                withCredentials: self.withCredentials
             };
             angular.merge(options, additional_options);
             if (self.url) {

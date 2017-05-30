@@ -46,7 +46,8 @@
             <select ng-model="ctrl.target.aggregator" class="gf-form-input input-small" ng-options="a for a in ctrl.aggregators" ng-change="ctrl.queryUpdated()"> </select>
         </div>
         <div class="gf-form max-width-20" ng-if="['resource', 'resource_search', 'resource_aggregation'].indexOf(ctrl.target.queryMode) >= 0" >
-            <label class="gf-form-label query-keyword width-8">Label <span ng-if="target.queryMode !== 'resource_aggregation'">attribute</span></label>
+            <label class="gf-form-label query-keyword width-8" ng-if="target.queryMode !== 'resource_aggregation'">Label</label>
+            <label class="gf-form-label query-keyword width-8" ng-if="target.queryMode === 'resource_aggregation'">Resource attribute or label</label>
             <input type="text" class="gf-form-input" ng-model="ctrl.target.label" spellcheck='false' placeholder="id" data-min-length=0 ng-model-onblur ng-blur="ctrl.queryUpdated()">
         </div>
     </div>

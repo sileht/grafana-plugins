@@ -11,10 +11,10 @@ var GnocchiDatasourceQueryCtrl = (function () {
         this.aggregators = ['mean', 'sum', 'min', 'max',
             'std', 'median', 'first', 'last', 'count'].concat(_.range(1, 100).map(function (i) { return i + "pct"; }));
         this.queryModes = [
-            { text: 'Measurements of a metric of multiple resources', value: 'resource_search' },
-            { text: 'Aggregated measurements of a metric across resources', value: 'resource_aggregation' },
-            { text: 'Measurements of a metric of a resource', value: 'resource' },
-            { text: 'Measurements of a metric', value: 'metric' }
+            { text: 'resource search', value: 'resource_search' },
+            { text: 'resource search (aggregated measurements)', value: 'resource_aggregation' },
+            { text: 'resource ID and metric name', value: 'resource' },
+            { text: 'metric ID', value: 'metric' }
         ];
         if (!this.target.refId) {
             this.target.refId = this.getNextQueryLetter();

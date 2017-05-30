@@ -2,10 +2,10 @@
 </datasource-http-settings>
 
 <div class="gf-info-box" style="margin: 10px 0 30px 0" ng-if="ctrl.current.access == 'direct'">
-    When "direct" access is used, Gnocchi and Keystone MUST have CORS configured correctly on the server side.<br />
+    When "direct" access is used, Gnocchi and Keystone MUST have CORS configured correctly on the server side.<br /><br />
 </div>
 <h3>Gnocchi Details</h3>
-<div class="gf-form-group">
+<div class="gf-form-group" ng-if="!ctrl.current.basicAuth">
     <div class="gf-form-inline">
         <div class="gf-form max-width-30">
             <span class="gf-form-label width-7">Auth Mode</span>
@@ -20,6 +20,7 @@
         </div>
     </div>
     <div style="padding:5px">
+        <span ng-if="ctrl.current.jsonData.mode == 'noauth'">noauth is deprecated</span>
         <span ng-if="ctrl.current.access == 'direct' && ctrl.current.jsonData.mode == 'keystone'">The Keystone URL is expected in Http settings</span>
         <span ng-if="ctrl.current.access == 'proxy' && ctrl.current.jsonData.mode == 'keystone'">This configuration can't works, select another 'Access' or 'Auth Mode'</span>
         <span ng-if="ctrl.current.jsonData.mode != 'keystone'">The Gnocchi URL is expected in Http settings</span>

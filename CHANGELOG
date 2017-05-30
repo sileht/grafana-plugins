@@ -1,0 +1,9 @@
+Version 1.2.0
+
+* Gnocchi basic auth support
+* Allow to express Query in fancy format instead of JSON
+
+Version 1.1.0
+
+* Allow to select granularity
+* Provide example dashboard that works out of the box for Openstack Ceilometer

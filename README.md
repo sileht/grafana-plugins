@@ -90,8 +90,10 @@ Gnocchi Datasource Plugin provides following functions in `Variables values quer
 
 Name | Description
 | ------- | --------|
-`metrics(resource_id)`  | Returns a list of metrics avialable for the resource identified by ‘resource_id’
+`metrics(resource_id)`  | Returns a list of metrics available for the resource identified by ‘resource_id’
 `resources(resource_type, `attribute`, query)` | Returns a list of resource `attribute` matching `query`.
+
+  ![](https://raw.githubusercontent.com/gnocchixyz/grafana-gnocchi-datasource/master/docs/gnocchi_templating.png)
 
 For details of `Query` format, please refer to the Gnocchi and Gnocchi client documentations.
 

@@ -7,10 +7,12 @@ export default class GnocchiDatasource {
     type: string;
     supportMetrics: boolean;
     default_headers: any;
+    withCredentials: boolean;
     domain: string;
     project: string;
     username: string;
     password: string;
+    auth_mode: string;
     roles: string;
     url: string;
     keystone_endpoint: string;
@@ -26,7 +28,11 @@ export default class GnocchiDatasource {
         'Content-Type': 'application/json',
       };
 
+      self.keystone_endpoint = null;
+      self.url = self.sanitize_url(instanceSettings.url);
+
       if (instanceSettings.jsonData) {
+        self.auth_mode = instanceSettings.jsonData.mode;
         self.project = instanceSettings.jsonData.project;
         self.username = instanceSettings.jsonData.username;
         self.password = instanceSettings.jsonData.password;
@@ -35,27 +41,34 @@ export default class GnocchiDatasource {
         if (self.domain === undefined || self.domain === "") {
           self.domain = 'default';
         }
-        if (self.roles === undefined || self.roles === "") {
-          self.roles = 'admin';
-        }
+      }
+
+      if (self.roles === undefined || self.roles === "") {
+        self.roles = 'admin';
+      }
+
+      if (instanceSettings.basicAuth || instanceSettings.withCredentials) {
+          self.withCredentials = true;
       }
 
       // If the URL starts with http, we are in direct mode
-      if (instanceSettings.jsonData.mode === "keystone"){
-        self.url = null;
-        self.keystone_endpoint = self.sanitize_url(instanceSettings.url);
-      } else if (instanceSettings.jsonData.mode === "token"){
-        self.url = self.sanitize_url(instanceSettings.url);
-        self.keystone_endpoint = null;
+      if (instanceSettings.basicAuth) {
+        self.default_headers["Authorization"] = instanceSettings.basicAuth;
+
+      } else if (self.auth_mode === "token"){
         self.default_headers['X-Auth-Token'] = instanceSettings.jsonData.token;
-      } else {
-        self.url = self.sanitize_url(instanceSettings.url);
-        self.keystone_endpoint = null;
+
+      } else if (self.auth_mode === "noauth"){
         self.default_headers['X-Project-Id'] = self.project;
         self.default_headers['X-User-Id'] = self.username;
         self.default_headers['X-Domain-Id'] = self.domain;
         self.default_headers['X-Roles'] = self.roles;
+
+      } else if (self.auth_mode === "keystone"){
+        self.url = null;
+        self.keystone_endpoint = self.sanitize_url(instanceSettings.url);
       }
+
     }
 
     ////////////////
@@ -415,7 +428,8 @@ export default class GnocchiDatasource {
         var options = {
           url: null,
           method: null,
-          headers: null
+          headers: null,
+          withCredentials: self.withCredentials
         };
         angular.merge(options, additional_options);
         if (self.url){

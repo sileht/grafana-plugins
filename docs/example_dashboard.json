@@ -88,12 +88,12 @@
             {
               "aggregator": "mean",
               "hide": false,
-              "label": "",
+              "label": "display_name",
               "metric_name": "cpu_util",
               "queryMode": "resource_search",
               "refId": "A",
               "resource_id": "",
-              "resource_search": "{\"like\": {\"original_resource_id\": \"%\"}}",
+              "resource_search": "original_resource_id like '%'",
               "resource_type": "instance",
               "validQuery": true
             }
@@ -184,11 +184,11 @@
             {
               "aggregator": "mean",
               "hide": false,
-              "label": "",
+              "label": "display_name",
               "metric_name": "memory.usage",
               "queryMode": "resource_search",
               "refId": "A",
-              "resource_search": "{\"like\": {\"display_name\": \"%\"}}",
+              "resource_search": "original_resource_id like '%'",
               "resource_type": "instance",
               "validQuery": true
             }
@@ -283,7 +283,7 @@
               "metric_name": "disk.device.write.bytes.rate",
               "queryMode": "resource_search",
               "refId": "A",
-              "resource_search": "{\"like\": {\"original_resource_id\": \"%\"}}",
+              "resource_search": "original_resource_id like '%'",
               "resource_type": "instance_disk",
               "validQuery": true
             }
@@ -370,7 +370,7 @@
               "metric_name": "disk.device.write.bytes",
               "queryMode": "resource_search",
               "refId": "A",
-              "resource_search": "{\"like\": {\"original_resource_id\": \"%\"}}",
+              "resource_search": "original_resource_id like '%'",
               "resource_type": "instance_disk",
               "validQuery": true
             }
@@ -464,7 +464,7 @@
               "metric_name": "disk.device.read.bytes.rate",
               "queryMode": "resource_search",
               "refId": "A",
-              "resource_search": "{\"like\": {\"original_resource_id\": \"%\"}}",
+              "resource_search": "original_resource_id like '%'",
               "resource_type": "instance_disk",
               "validQuery": true
             }
@@ -550,7 +550,7 @@
               "metric_name": "disk.device.read.bytes",
               "queryMode": "resource_search",
               "refId": "A",
-              "resource_search": "{\"like\": {\"original_resource_id\": \"%\"}}",
+              "resource_search": "original_resource_id like '%'",
               "resource_type": "instance_disk",
               "validQuery": true
             }
@@ -644,7 +644,7 @@
               "metric_name": "network.outgoing.bytes.rate",
               "queryMode": "resource_search",
               "refId": "A",
-              "resource_search": "{\"like\": {\"original_resource_id\": \"instance-%\"}}",
+              "resource_search": "original_resource_id like '%'",
               "resource_type": "instance_network_interface",
               "validQuery": true
             }
@@ -730,7 +730,7 @@
               "metric_name": "network.outgoing.bytes",
               "queryMode": "resource_search",
               "refId": "A",
-              "resource_search": "{\"like\": {\"original_resource_id\": \"instance-%\"}}",
+              "resource_search": "original_resource_id like '%'",
               "resource_type": "instance_network_interface",
               "validQuery": true
             }
@@ -824,7 +824,7 @@
               "metric_name": "network.incoming.bytes.rate",
               "queryMode": "resource_search",
               "refId": "A",
-              "resource_search": "{\"like\": {\"original_resource_id\": \"instance-%\"}}",
+              "resource_search": "original_resource_id like '%'",
               "resource_type": "instance_network_interface",
               "validQuery": true
             }
@@ -910,7 +910,7 @@
               "metric_name": "network.incoming.bytes",
               "queryMode": "resource_search",
               "refId": "A",
-              "resource_search": "{\"like\": {\"original_resource_id\": \"instance-%\"}}",
+              "resource_search": "original_resource_id like '%'",
               "resource_type": "instance_network_interface",
               "validQuery": true
             }

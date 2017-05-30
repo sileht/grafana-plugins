@@ -76,7 +76,8 @@ export default class GnocchiDatasource {
             'start': options.range.from.toISOString(),
             'end': null,
             'stop': null,
-            'granularity': null
+            'granularity': null,
+            'filter': null
           }
         };
         if (options.range.to){
@@ -114,24 +115,7 @@ export default class GnocchiDatasource {
         resource_type = resource_type || "generic";
 
         if (target.queryMode === "resource_search") {
-          var resource_search_req;
-
-          // Json query or filter expression
-          if (resource_search.trim()[0] === '{') {
-            resource_search_req = {
-              url: 'v1/search/resource/' + resource_type,
-              method: 'POST',
-              data: resource_search,
-            };
-          } else {
-            resource_search_req = {
-              url: 'v1/search/resource/' + resource_type,
-              method: 'GET',
-              params: {
-                filter: encodeURIComponent(resource_search),
-              }
-            };
-          }
+          var resource_search_req = self.buildQueryRequest(resource_type, resource_search);
           return self._gnocchi_request(resource_search_req).then(function(result) {
             return self.$q.all(_.map(result, function(resource) {
               var measures_req = _.merge({}, default_measures_req);
@@ -148,7 +132,11 @@ export default class GnocchiDatasource {
           default_measures_req.url = ('v1/aggregation/resource/' +
                                       resource_type + '/metric/' + metric_name);
           default_measures_req.method = 'POST';
-          default_measures_req.data = resource_search;
+          if (resource_search.trim()[0] === '{') {
+            default_measures_req.data = resource_search;
+          } else {
+            default_measures_req.params.filter = resource_search;
+          }
           return self._retrieve_measures(label || "unlabeled", default_measures_req);
 
         } else if (target.queryMode === "resource") {
@@ -243,16 +231,28 @@ export default class GnocchiDatasource {
 
     metricFindQuery(query) {
       var self = this;
-      var req = { method: 'POST', url: null, data: null };
+      var req = { method: 'POST', url: null, data: null, params: {filter: null}};
       var resourceQuery = query.match(/^resources\(([^,]*),\s?([^,]*),\s?([^\)]+?)\)/);
       if (resourceQuery) {
+        var resource_search;
+
         try {
-          // Ensure self is json
-          req.data = self.templateSrv.replace(angular.toJson(angular.fromJson(resourceQuery[3])));
           req.url = self.templateSrv.replace('v1/search/resource/' + resourceQuery[1]);
+          resource_search = self.templateSrv.replace(resourceQuery[3]);
+          if (resource_search.trim()[0] === '{') {
+            angular.toJson(angular.fromJson(resource_search));
+          }
         } catch (err) {
           return self.$q.reject(err);
         }
+
+
+        if (resource_search.trim()[0] === '{') {
+          req.data = resource_search;
+        } else {
+          req.params.filter = resource_search;
+        }
+
         return self._gnocchi_request(req).then(function(result) {
           var values = _.map(result, function(resource) {
             var value = resource[resourceQuery[2]];
@@ -304,14 +304,34 @@ export default class GnocchiDatasource {
     /// Query
     ////////////////
 
+    buildQueryRequest(resource_type, resource_search) {
+      var self = this;
+      var resource_search_req;
+
+      resource_type = resource_type || 'generic';
+
+      if (resource_search.trim()[0] === '{') {
+        resource_search_req = {
+          url: 'v1/search/resource/' + resource_type,
+          method: 'POST',
+          data: resource_search,
+        };
+      } else {
+        resource_search_req = {
+          url: 'v1/search/resource/' + resource_type,
+          method: 'POST',
+          params: {
+            filter: resource_search,
+          }
+        };
+      }
+      return resource_search_req;
+    }
+
     validateSearchTarget(target) {
       var self = this;
-      var resource_search_req = {
-        url: 'v1/search/resource/' + (target.resource_type || 'generic'),
-        method: 'POST',
-        data: target.resource_search,
-      };
-      return self._gnocchi_request(resource_search_req);
+      return self._gnocchi_request(self.buildQueryRequest(
+        target.resource_type, target.resource_search));
     }
 
     //////////////////////
@@ -319,6 +339,8 @@ export default class GnocchiDatasource {
     //////////////////////
 
     validateTarget(target, syntax_only) {
+      // FIXME(sileht): When syntax_only is false, we should do template interpolation
+
       var self = this;
       var mandatory = [];
       switch (target.queryMode) {
@@ -339,6 +361,12 @@ export default class GnocchiDatasource {
         case "resource_search":
           if (!target.resource_search) {
             mandatory.push("Query");
+          } else if (target.resource_search.trim()[0] === '{') {
+            try {
+              angular.toJson(angular.fromJson(target.resource_search));
+            } catch (err) {
+              mandatory.push("Query");
+            }
           }
           if (!target.metric_name) {
             mandatory.push("Metric name");

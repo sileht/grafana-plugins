@@ -108,15 +108,70 @@ describe('GnocchiDatasource', function() {
       'my_uuid', null, null);
   });
 
-  describe('Resource aggregation', function() {
+  describe('Resource aggregation JSON', function() {
     assert_simple_test(
-      [{ queryMode: 'resource_aggregation', resource_search: '{"=": {"server_group": "autoscalig_group"}}',
+      [{ queryMode: 'resource_aggregation', resource_search: '{"=": {"server_group": "autoscaling_group"}}',
         resource_type: 'instance', label: 'my_aggregation', metric_name: 'cpu_util', aggregator: 'max' }],
       'POST',
       "/v1/aggregation/resource/instance/metric/cpu_util?" +
         "aggregation=max&end=2014-04-20T03:20:10.000Z&start=2014-04-10T03:20:10.000Z&stop=2014-04-20T03:20:10.000Z",
-      {"=": {"server_group": "autoscalig_group"}},
+      {"=": {"server_group": "autoscaling_group"}},
       'my_aggregation', null, null);
+  });
+
+  describe('Resource aggregation expression', function() {
+    assert_simple_test(
+      [{ queryMode: 'resource_aggregation', resource_search: 'server_group=autoscaling_group',
+        resource_type: 'instance', label: 'my_aggregation', metric_name: 'cpu_util', aggregator: 'max' }],
+      'POST',
+      "/v1/aggregation/resource/instance/metric/cpu_util?" +
+        "aggregation=max&end=2014-04-20T03:20:10.000Z" +
+        "&filter=server_group%3Dautoscaling_group" +
+        "&start=2014-04-10T03:20:10.000Z&stop=2014-04-20T03:20:10.000Z",
+      null,
+      'my_aggregation', null, null);
+  });
+
+  describe('MetricFindQuery resources() query', function(){
+    var url_expected_search_resources = "/v1/search/resource/instance?filter=server_group%3D'autoscaling_group'";
+    var response_search_resources = [
+      {
+        "display_name": "myfirstvm",
+        "host": "compute1",
+        "id": "6868da77-fa82-4e67-aba9-270c5ae8cbca",
+        "image_ref": "http://image",
+        "type": "instance",
+        "server_group": "autoscaling_group",
+      },
+      {
+        "display_name": "mysecondvm",
+        "host": "compute1",
+        "id": "f898ba55-bbea-460f-985c-3d1243348304",
+        "image_ref": "http://image",
+        "type": "instance",
+        "server_group": "autoscaling_group",
+      }
+    ];
+
+    var results;
+
+    beforeEach(function() {
+      $httpBackend.expect('POST', url_expected_search_resources).respond(response_search_resources);
+      ds.metricFindQuery("resources(instance, display_name, server_group='autoscaling_group')").then(function(data) { results = data; });
+      $httpBackend.flush();
+    });
+
+    it("nothing more", function() {
+      $httpBackend.verifyNoOutstandingExpectation();
+      $httpBackend.verifyNoOutstandingRequest();
+    });
+
+    it('should return series list', function() {
+      expect(results.length).to.be(2);
+      expect(results[0].text).to.be('myfirstvm');
+      expect(results[1].text).to.be('mysecondvm');
+    });
+
   });
 
   describe('Resource search JSON', function() {
@@ -194,12 +249,12 @@ describe('GnocchiDatasource', function() {
   describe('Resource search filter expression', function() {
     var query = {
       range: { from: moment.utc([2014, 3, 10, 3, 20, 10]), to: moment.utc([2014, 3, 20, 3, 20, 10]) },
-      targets: [{ hide: false, queryMode: 'resource_search', resource_search: 'server_group="autoscalig_group"',
+      targets: [{ hide: false, queryMode: 'resource_search', resource_search: 'server_group="autoscaling_group"',
         resource_type: 'instance', label: 'display_name', metric_name: 'cpu_util', aggregator: 'max' }],
       interval: '1s'
     };
 
-    var url_expected_search_resources = "/v1/search/resource/instance?filter=server_group%253D%2522autoscalig_group%2522";
+    var url_expected_search_resources = "/v1/search/resource/instance?filter=server_group%3D%22autoscaling_group%22";
     var response_search_resources = [
       {
         "display_name": "myfirstvm",
@@ -237,7 +292,7 @@ describe('GnocchiDatasource', function() {
 
     var results;
     beforeEach(function() {
-      $httpBackend.expect('GET', url_expected_search_resources).respond(response_search_resources);
+      $httpBackend.expect('POST', url_expected_search_resources).respond(response_search_resources);
       $httpBackend.expect('GET', url_expected_get_measures1).respond(response_get_measures1);
       $httpBackend.expect('GET', url_expected_get_measures2).respond(response_get_measures2);
       ds.query(query).then(function(data) { results = data; });

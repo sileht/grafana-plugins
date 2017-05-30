@@ -10,6 +10,10 @@ error() { echo $1 ; exit 1 ; }
 
 if [ "$1" ] ; then
     version="$1"
+    if [ "$(get_version plugin.json)" != "$version" ]; then
+        sed -i 's/"version": "[^"]*"/"version": "'$version'"/' plugin.json package.json
+        git commit -m "Bump version $version" plugin.json package.json
+    fi
 else
     version=$(git tag | tail -1)
     version=$(inc_version $version)

@@ -90,7 +90,8 @@ export default class GnocchiDatasource {
             'end': null,
             'stop': null,
             'granularity': null,
-            'filter': null
+            'filter': null,
+            'needed_overlap': null
           }
         };
         if (options.range.to){
@@ -145,6 +146,7 @@ export default class GnocchiDatasource {
           default_measures_req.url = ('v1/aggregation/resource/' +
                                       resource_type + '/metric/' + metric_name);
           default_measures_req.method = 'POST';
+          default_measures_req.params.needed_overlap = target.needed_overlap
           if (resource_search.trim()[0] === '{') {
             default_measures_req.data = resource_search;
           } else {

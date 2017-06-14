@@ -44,6 +44,9 @@ export class GnocchiDatasourceQueryCtrl {
     if (!this.target.queryMode) {
         this.target.queryMode = "resource_search";
     }
+    if (!this.target.needed_overlap) {
+        this.target.needed_overlap = 0;
+    }
 
     this.target.validQuery = false;
     this.target.queryError = 'No query';

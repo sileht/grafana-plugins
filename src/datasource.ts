@@ -138,15 +138,14 @@ export default class GnocchiDatasource {
               }
               measures_req.url = ('v1/resource/' + resource_type +
                                   '/' + resource["id"] + '/metric/' + metric_name + '/measures');
-              if (!label) { label = "id" ; }
-              return self._retrieve_measures(resource[label] || "attribute " + label + " not found", measures_req);
+              return self._retrieve_measures(self._compute_label(label, resource), measures_req);
             }));
           });
         } else if (target.queryMode === "resource_aggregation") {
           default_measures_req.url = ('v1/aggregation/resource/' +
                                       resource_type + '/metric/' + metric_name);
           default_measures_req.method = 'POST';
-          default_measures_req.params.needed_overlap = target.needed_overlap
+          default_measures_req.params.needed_overlap = target.needed_overlap;
           if (resource_search.trim()[0] === '{') {
             default_measures_req.data = resource_search;
           } else {
@@ -161,12 +160,9 @@ export default class GnocchiDatasource {
           };
 
           return self._gnocchi_request(resource_req).then(function(resource) {
-            if (!label) { label = "id" ; }
-            label = resource[label] || "attribute " + label + " not found";
-            if (!label) { label = resource_id ; }
             default_measures_req.url = ('v1/resource/' + resource_type+ '/' +
                                         resource_id + '/metric/' + metric_name+ '/measures');
-            return self._retrieve_measures(label, default_measures_req);
+            return self._retrieve_measures(self._compute_label(label, resource), default_measures_req);
           });
         } else if (target.queryMode === "metric") {
           default_measures_req.url = 'v1/metric/' + metric_id + '/measures';
@@ -211,6 +207,24 @@ export default class GnocchiDatasource {
         });
         return { target: name, datapoints: _.toArray(dps).reverse() };
       });
+    }
+
+    _compute_label(label, resource){
+      if (label) {
+        if (label in resource){
+            label = "$" + label;
+            // NOTE(sileht): How to make deprecation better
+            console.log("Deprecation: resource attribute must be prefixed by $");
+        }
+        if (label.startsWith("$")) {
+          var attr = label.slice(1);
+          return resource[attr] || "attribute " + attr + " not found";
+        } else {
+          return label;
+        }
+      } else {
+        return resource["id"] ;
+      }
     }
 
     performSuggestQuery(query, type, target) {

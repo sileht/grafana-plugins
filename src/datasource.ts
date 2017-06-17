@@ -211,11 +211,6 @@ export default class GnocchiDatasource {
 
     _compute_label(label, resource){
       if (label) {
-        if (label in resource){
-            label = "$" + label;
-            // NOTE(sileht): How to make deprecation better
-            console.log("Deprecation: resource attribute must be prefixed by $");
-        }
         if (label.startsWith("$")) {
           var attr = label.slice(1);
           return resource[attr] || "attribute " + attr + " not found";

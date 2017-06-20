@@ -68,7 +68,8 @@ var GnocchiDatasource = (function () {
                     'end': null,
                     'stop': null,
                     'granularity': null,
-                    'filter': null
+                    'filter': null,
+                    'needed_overlap': null
                 }
             };
             if (options.range.to) {
@@ -112,10 +113,7 @@ var GnocchiDatasource = (function () {
                         }
                         measures_req.url = ('v1/resource/' + resource_type +
                             '/' + resource["id"] + '/metric/' + metric_name + '/measures');
-                        if (!label) {
-                            label = "id";
-                        }
-                        return self._retrieve_measures(resource[label] || "attribute " + label + " not found", measures_req);
+                        return self._retrieve_measures(self._compute_label(label, resource), measures_req);
                     }));
                 });
             }
@@ -123,6 +121,7 @@ var GnocchiDatasource = (function () {
                 default_measures_req.url = ('v1/aggregation/resource/' +
                     resource_type + '/metric/' + metric_name);
                 default_measures_req.method = 'POST';
+                default_measures_req.params.needed_overlap = target.needed_overlap;
                 if (resource_search.trim()[0] === '{') {
                     default_measures_req.data = resource_search;
                 }
@@ -137,16 +136,9 @@ var GnocchiDatasource = (function () {
                     method: 'GET'
                 };
                 return self._gnocchi_request(resource_req).then(function (resource) {
-                    if (!label) {
-                        label = "id";
-                    }
-                    label = resource[label] || "attribute " + label + " not found";
-                    if (!label) {
-                        label = resource_id;
-                    }
                     default_measures_req.url = ('v1/resource/' + resource_type + '/' +
                         resource_id + '/metric/' + metric_name + '/measures');
-                    return self._retrieve_measures(label, default_measures_req);
+                    return self._retrieve_measures(self._compute_label(label, resource), default_measures_req);
                 });
             }
             else if (target.queryMode === "metric") {
@@ -189,6 +181,20 @@ var GnocchiDatasource = (function () {
             });
             return { target: name, datapoints: _.toArray(dps).reverse() };
         });
+    };
+    GnocchiDatasource.prototype._compute_label = function (label, resource) {
+        if (label) {
+            if (label.startsWith("$")) {
+                var attr = label.slice(1);
+                return resource[attr] || "attribute " + attr + " not found";
+            }
+            else {
+                return label;
+            }
+        }
+        else {
+            return resource["id"];
+        }
     };
     GnocchiDatasource.prototype.performSuggestQuery = function (query, type, target) {
         var self = this;

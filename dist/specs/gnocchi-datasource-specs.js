@@ -188,8 +188,8 @@ describe('GnocchiDatasource', function () {
         });
         it('should return series list', function () {
             expect(results.data.length).to.be(2);
-            expect(results.data[0].target).to.be('myfirstvm');
-            expect(results.data[1].target).to.be('mysecondvm');
+            expect(results.data[0]).to.be('myfirstvm');
+            expect(results.data[1]).to.be('mysecondvm');
             expect(results.data[0].datapoints[0][0]).to.be('43.1');
             expect(results.data[0].datapoints[0][1]).to.be(1412606037000);
             expect(results.data[0].datapoints[1][0]).to.be('12');

@@ -47,8 +47,13 @@
         </div>
         <div class="gf-form max-width-20" ng-if="['resource', 'resource_search', 'resource_aggregation'].indexOf(ctrl.target.queryMode) >= 0" >
             <label class="gf-form-label query-keyword width-8" ng-if="target.queryMode !== 'resource_aggregation'">Label</label>
-            <label class="gf-form-label query-keyword width-8" ng-if="target.queryMode === 'resource_aggregation'">Resource attribute or label</label>
-            <input type="text" class="gf-form-input" ng-model="ctrl.target.label" spellcheck='false' placeholder="id" data-min-length=0 ng-model-onblur ng-blur="ctrl.queryUpdated()">
+            <label class="gf-form-label query-keyword width-8" ng-if="target.queryMode === 'resource_aggregation'">Label or Resource attribute (prefixed by $)</label>
+            <input type="text" class="gf-form-input" ng-model="ctrl.target.label" spellcheck='false' placeholder="$id" data-min-length=0 ng-model-onblur ng-blur="ctrl.queryUpdated()">
         </div>
+        <div class="gf-form max-width-20" ng-if="['resource_aggregation'].indexOf(ctrl.target.queryMode) >= 0" >
+            <label class="gf-form-label query-keyword width-8">Percent of needed overlap</label>
+            <input type="text" class="gf-form-input" ng-model="ctrl.target.need_overlap" spellcheck='false' placeholder="0" data-min-length=0 ng-model-onblur ng-blur="ctrl.queryUpdated()">
+        </div>
+
     </div>
 </query-editor-row>

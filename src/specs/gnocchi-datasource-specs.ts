@@ -142,6 +142,7 @@ describe('GnocchiDatasource', function() {
         "image_ref": "http://image",
         "type": "instance",
         "server_group": "autoscaling_group",
+        "metrics": {"cpu_util": "1634173a-e3b8-4119-9eba-fa9a4d971c3b"}
       },
       {
         "display_name": "mysecondvm",
@@ -150,6 +151,7 @@ describe('GnocchiDatasource', function() {
         "image_ref": "http://image",
         "type": "instance",
         "server_group": "autoscaling_group",
+        "metrics": {"cpu_util": "1634173a-e3b8-4119-9eba-fa9a4d971c3b"}
       }
     ];
 
@@ -178,7 +180,7 @@ describe('GnocchiDatasource', function() {
     var query = {
       range: { from: moment.utc([2014, 3, 10, 3, 20, 10]), to: moment.utc([2014, 3, 20, 3, 20, 10]) },
       targets: [{ hide: false, queryMode: 'resource_search', resource_search: '{"=": {"server_group": "autoscalig_group"}}',
-        resource_type: 'instance', label: '$display_name', metric_name: 'cpu_util', aggregator: 'max' }],
+        resource_type: 'instance', label: '$display_name', metric_name: 'cpu_*', aggregator: 'max' }],
       interval: '1s'
     };
 
@@ -191,6 +193,7 @@ describe('GnocchiDatasource', function() {
         "image_ref": "http://image",
         "type": "instance",
         "server_group": "autoscalig_group",
+        "metrics": {"cpu_util": "1634173a-e3b8-4119-9eba-fa9a4d971c3b"}
       },
       {
         "display_name": "mysecondvm",
@@ -199,6 +202,8 @@ describe('GnocchiDatasource', function() {
         "image_ref": "http://image",
         "type": "instance",
         "server_group": "autoscalig_group",
+        "metrics": {"cpu_util": "1634173a-e3b8-4119-9eba-fa9a4d971c3b",
+                    "cpu_time": "1634173a-e3b8-4119-9eba-fa9a4d971c3b"}
       }
     ];
 
@@ -218,11 +223,20 @@ describe('GnocchiDatasource', function() {
       ["2014-10-06T14:34:20+00:00", "60.0", "30"],
     ];
 
+    var url_expected_get_measures3 = "/v1/resource/instance/f898ba55-bbea-460f-985c-3d1243348304/metric/cpu_time/measures?" +
+      "aggregation=max&end=2014-04-20T03:20:10.000Z&start=2014-04-10T03:20:10.000Z&stop=2014-04-20T03:20:10.000Z";
+    var response_get_measures3 = [
+      ["2014-10-06T14:33:57+00:00", "60.0", "2"],
+      ["2014-10-06T14:34:12+00:00", "60.0", "1"],
+      ["2014-10-06T14:34:20+00:00", "60.0", "1"],
+    ];
+
     var results;
     beforeEach(function() {
       $httpBackend.expect('POST', url_expected_search_resources).respond(response_search_resources);
       $httpBackend.expect('GET', url_expected_get_measures1).respond(response_get_measures1);
       $httpBackend.expect('GET', url_expected_get_measures2).respond(response_get_measures2);
+      $httpBackend.expect('GET', url_expected_get_measures3).respond(response_get_measures3);
       ds.query(query).then(function(data) { results = data; });
       $httpBackend.flush();
     });
@@ -233,9 +247,10 @@ describe('GnocchiDatasource', function() {
     });
 
     it('should return series list', function() {
-      expect(results.data.length).to.be(2);
-      expect(results.data[0].target).to.be('myfirstvm');
-      expect(results.data[1].target).to.be('mysecondvm');
+      expect(results.data.length).to.be(3);
+      expect(results.data[0].target).to.be('myfirstvm - cpu_util');
+      expect(results.data[1].target).to.be('mysecondvm - cpu_util');
+      expect(results.data[2].target).to.be('mysecondvm - cpu_time');
       expect(results.data[0].datapoints[0][0]).to.be('43.1');
       expect(results.data[0].datapoints[0][1]).to.be(1412606037000);
       expect(results.data[0].datapoints[1][0]).to.be('12');
@@ -263,6 +278,7 @@ describe('GnocchiDatasource', function() {
         "image_ref": "http://image",
         "type": "instance",
         "server_group": "autoscalig_group",
+        "metrics": {"cpu_util": "1634173a-e3b8-4119-9eba-fa9a4d971c3b"}
       },
       {
         "display_name": "mysecondvm",
@@ -271,6 +287,7 @@ describe('GnocchiDatasource', function() {
         "image_ref": "http://image",
         "type": "instance",
         "server_group": "autoscalig_group",
+        "metrics": {"cpu_util": "1634173a-e3b8-4119-9eba-fa9a4d971c3b"}
       }
     ];
 
@@ -381,6 +398,7 @@ describe('GnocchiDatasource', function() {
         "image_ref": "http://image",
         "type": "instance",
         "server_group": "autoscalig_group",
+        "metrics": {"cpu_util": "1634173a-e3b8-4119-9eba-fa9a4d971c3b"}
       },
       {
         "display_name": "mysecondvm",
@@ -389,6 +407,7 @@ describe('GnocchiDatasource', function() {
         "image_ref": "http://image",
         "type": "instance",
         "server_group": "autoscalig_group",
+        "metrics": {"cpu_util": "1634173a-e3b8-4119-9eba-fa9a4d971c3b"}
       }
     ];
 

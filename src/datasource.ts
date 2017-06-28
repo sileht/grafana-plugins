@@ -106,7 +106,7 @@ export default class GnocchiDatasource {
           // console.log("target is not yet valid: " + error);
           return self.$q.when([]);
         }
-        var metric_name;
+        var metric_wildcard;
         var resource_search;
         var resource_type;
         var resource_id;
@@ -115,7 +115,7 @@ export default class GnocchiDatasource {
         var granularity;
 
         try {
-          metric_name = self.templateSrv.replace(target.metric_name, options.scopedVars);
+          metric_wildcard = self.templateSrv.replace(target.metric_name, options.scopedVars);
           resource_search = self.templateSrv.replace(target.resource_search, options.scopedVars);
           resource_type = self.templateSrv.replace(target.resource_type, options.scopedVars);
           resource_id = self.templateSrv.replace(target.resource_id, options.scopedVars);
@@ -131,19 +131,32 @@ export default class GnocchiDatasource {
         if (target.queryMode === "resource_search") {
           var resource_search_req = self.buildQueryRequest(resource_type, resource_search);
           return self._gnocchi_request(resource_search_req).then(function(result) {
-            return self.$q.all(_.map(result, function(resource) {
-              var measures_req = _.merge({}, default_measures_req);
-              if (granularity !== '') {
-                  measures_req.params.granularity = granularity;
-              }
-              measures_req.url = ('v1/resource/' + resource_type +
-                                  '/' + resource["id"] + '/metric/' + metric_name + '/measures');
-              return self._retrieve_measures(self._compute_label(label, resource), measures_req);
-            }));
+
+            return self.$q.all(_.flatten(_.map(result, function(resource) {
+
+              var metric_names = _.filter(_.keys(resource["metrics"]),
+                  function(name) { return name.match(metric_wildcard); });
+
+              return _.map(metric_names, function(metric_name){
+                var measures_req = _.merge({}, default_measures_req);
+                if (granularity !== '') {
+                    measures_req.params.granularity = granularity;
+                }
+                measures_req.url = ('v1/resource/' + resource_type +
+                                    '/' + resource["id"] + '/metric/' + metric_name + '/measures');
+                var final_label = self._compute_label(label, resource);
+                if (metric_name !== metric_wildcard){
+                  final_label = final_label + " - " + metric_name;
+                }
+                return self._retrieve_measures(final_label, measures_req);
+              });
+
+            })));
           });
+
         } else if (target.queryMode === "resource_aggregation") {
           default_measures_req.url = ('v1/aggregation/resource/' +
-                                      resource_type + '/metric/' + metric_name);
+                                      resource_type + '/metric/' + metric_wildcard);
           default_measures_req.method = 'POST';
           default_measures_req.params.needed_overlap = target.needed_overlap;
           if (resource_search.trim()[0] === '{') {
@@ -161,7 +174,7 @@ export default class GnocchiDatasource {
 
           return self._gnocchi_request(resource_req).then(function(resource) {
             default_measures_req.url = ('v1/resource/' + resource_type+ '/' +
-                                        resource_id + '/metric/' + metric_name+ '/measures');
+                                        resource_id + '/metric/' + metric_wildcard+ '/measures');
             return self._retrieve_measures(self._compute_label(label, resource), default_measures_req);
           });
         } else if (target.queryMode === "metric") {

@@ -1,5 +1,6 @@
-///<reference path="../typings/index.d.ts" />
 "use strict";
+///<reference path="../typings/index.d.ts" />
+Object.defineProperty(exports, "__esModule", { value: true });
 var GnocchiDatasourceQueryCtrl = (function () {
     function GnocchiDatasourceQueryCtrl($scope, $injector) {
         var _this = this;

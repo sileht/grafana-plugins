@@ -1,5 +1,6 @@
-///<reference path="../../../typings/index.d.ts" />
 "use strict";
+///<reference path="../../../typings/index.d.ts" />
+Object.defineProperty(exports, "__esModule", { value: true });
 var BackendSrvMock = (function () {
     function BackendSrvMock($http) {
         this.$http = $http;
@@ -25,6 +26,5 @@ var BackendSrvMock = (function () {
     };
     return BackendSrvMock;
 }());
-Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = BackendSrvMock;
 //# sourceMappingURL=backendsrv.js.map

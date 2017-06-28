@@ -84,7 +84,7 @@ var GnocchiDatasource = (function () {
                 // console.log("target is not yet valid: " + error);
                 return self.$q.when([]);
             }
-            var metric_wildcard;
+            var metric_regex;
             var resource_search;
             var resource_type;
             var resource_id;
@@ -92,7 +92,7 @@ var GnocchiDatasource = (function () {
             var label;
             var granularity;
             try {
-                metric_wildcard = self.templateSrv.replace(target.metric_name, options.scopedVars);
+                metric_regex = self.templateSrv.replace(target.metric_name, options.scopedVars);
                 resource_search = self.templateSrv.replace(target.resource_search, options.scopedVars);
                 resource_type = self.templateSrv.replace(target.resource_type, options.scopedVars);
                 resource_id = self.templateSrv.replace(target.resource_id, options.scopedVars);
@@ -108,7 +108,8 @@ var GnocchiDatasource = (function () {
                 var resource_search_req = self.buildQueryRequest(resource_type, resource_search);
                 return self._gnocchi_request(resource_search_req).then(function (result) {
                     return self.$q.all(_.flatten(_.map(result, function (resource) {
-                        var metric_names = _.filter(_.keys(resource["metrics"]), function (name) { return name.match(metric_wildcard); });
+                        var re = new RegExp(metric_regex);
+                        var metric_names = _.filter(_.keys(resource["metrics"]), function (name) { return re.test(name); });
                         return _.map(metric_names, function (metric_name) {
                             var measures_req = _.merge({}, default_measures_req);
                             if (granularity !== '') {
@@ -117,7 +118,10 @@ var GnocchiDatasource = (function () {
                             measures_req.url = ('v1/resource/' + resource_type +
                                 '/' + resource["id"] + '/metric/' + metric_name + '/measures');
                             var final_label = self._compute_label(label, resource);
-                            if (metric_name !== metric_wildcard) {
+                            if (label === "$metric") {
+                                final_label = metric_name;
+                            }
+                            else if (metric_name !== metric_regex) {
                                 final_label = final_label + " - " + metric_name;
                             }
                             return self._retrieve_measures(final_label, measures_req);
@@ -127,7 +131,7 @@ var GnocchiDatasource = (function () {
             }
             else if (target.queryMode === "resource_aggregation") {
                 default_measures_req.url = ('v1/aggregation/resource/' +
-                    resource_type + '/metric/' + metric_wildcard);
+                    resource_type + '/metric/' + metric_regex);
                 default_measures_req.method = 'POST';
                 default_measures_req.params.needed_overlap = target.needed_overlap;
                 if (resource_search.trim()[0] === '{') {
@@ -145,7 +149,7 @@ var GnocchiDatasource = (function () {
                 };
                 return self._gnocchi_request(resource_req).then(function (resource) {
                     default_measures_req.url = ('v1/resource/' + resource_type + '/' +
-                        resource_id + '/metric/' + metric_wildcard + '/measures');
+                        resource_id + '/metric/' + metric_regex + '/measures');
                     return self._retrieve_measures(self._compute_label(label, resource), default_measures_req);
                 });
             }
@@ -454,15 +458,15 @@ var GnocchiDatasource = (function () {
                         deferred.reject({ 'message': "Gnocchi authentication failure" });
                     }
                 }
-                else if (reason.status === 404 && reason.data !== undefined) {
+                else if (reason.status === 404 && reason.data !== undefined && reason.data.message !== undefined) {
                     reason.message = "Metric not found: " + reason.data.message.replace(/<[^>]+>/gm, ''); // Strip html tag
                     deferred.reject(reason);
                 }
-                else if (reason.status === 400 && reason.data !== undefined) {
+                else if (reason.status === 400 && reason.data !== undefined && reason.data.message !== undefined) {
                     reason.message = "Malformed query: " + reason.data.message.replace(/<[^>]+>/gm, ''); // Strip html tag
                     deferred.reject(reason);
                 }
-                else if (reason.status >= 300 && reason.data !== undefined) {
+                else if (reason.status >= 300 && reason.data !== undefined && reason.data.message !== undefined) {
                     reason.message = 'Gnocchi error: ' + reason.data.message.replace(/<[^>]+>/gm, ''); // Strip html tag
                     deferred.reject(reason);
                 }

@@ -145,7 +145,9 @@ export default class GnocchiDatasource {
                 measures_req.url = ('v1/resource/' + resource_type +
                                     '/' + resource["id"] + '/metric/' + metric_name + '/measures');
                 var final_label = self._compute_label(label, resource);
-                if (metric_name !== metric_regex){
+                if ( label === "$metric") {
+                  final_label = metric_name;
+                } else if (metric_name !== metric_regex){
                   final_label = final_label + " - " + metric_name;
                 }
                 return self._retrieve_measures(final_label, measures_req);

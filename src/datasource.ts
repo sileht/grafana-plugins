@@ -490,13 +490,13 @@ export default class GnocchiDatasource {
             } else {
               deferred.reject({'message': "Gnocchi authentication failure"});
             }
-          } else if (reason.status === 404 && reason.data !== undefined) {
+          } else if (reason.status === 404 && reason.data !== undefined && reason.data.message !== undefined) {
             reason.message = "Metric not found: " + reason.data.message.replace(/<[^>]+>/gm, ''); // Strip html tag
             deferred.reject(reason);
-          } else if (reason.status === 400 && reason.data !== undefined) {
+          } else if (reason.status === 400 && reason.data !== undefined && reason.data.message !== undefined) {
             reason.message = "Malformed query: " + reason.data.message.replace(/<[^>]+>/gm, ''); // Strip html tag
             deferred.reject(reason);
-          } else if (reason.status >= 300 && reason.data !== undefined) {
+          } else if (reason.status >= 300 && reason.data !== undefined && reason.data.message !== undefined) {
             reason.message = 'Gnocchi error: ' + reason.data.message.replace(/<[^>]+>/gm, '');  // Strip html tag
             deferred.reject(reason);
           } else if (reason.status){

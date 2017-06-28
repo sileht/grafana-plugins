@@ -1,6 +1,6 @@
 "use strict";
-///<reference path="../../../typings/index.d.ts" />
 Object.defineProperty(exports, "__esModule", { value: true });
+var _ = require("lodash");
 var BackendSrvMock = (function () {
     function BackendSrvMock($http) {
         this.$http = $http;

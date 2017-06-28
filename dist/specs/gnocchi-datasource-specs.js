@@ -1,5 +1,4 @@
 "use strict";
-///<reference path="../../typings/index.d.ts" />
 Object.defineProperty(exports, "__esModule", { value: true });
 var module_1 = require("../module");
 var backendsrv_1 = require("./mocks/backendsrv");

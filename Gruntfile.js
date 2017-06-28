@@ -24,6 +24,8 @@ module.exports = function(grunt) {
               experimentalDecorators: true,
               removeComments: false,
               noImplicitAny: false,
+              moduleResolution: "node",
+              typeRoots: ["node_modules/@types"],
           }
       },
     },

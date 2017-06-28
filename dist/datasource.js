@@ -1,6 +1,7 @@
 "use strict";
-///<reference path="../typings/index.d.ts" />
 Object.defineProperty(exports, "__esModule", { value: true });
+var _ = require("lodash");
+var angular = require("angular");
 var moment = require("moment");
 var GnocchiDatasource = (function () {
     function GnocchiDatasource(instanceSettings, $q, backendSrv, templateSrv) {

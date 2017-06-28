@@ -1,6 +1,5 @@
-///<reference path="../../../typings/index.d.ts" />
 
-
+import * as _ from "lodash";
 
 export default class BackendSrvMock {
     constructor(private $http) {

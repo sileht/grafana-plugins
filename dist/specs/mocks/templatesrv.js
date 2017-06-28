@@ -1,7 +1,5 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-///<reference path="../../../typings/index.d.ts" />
-//
 var TemplateSrvMock = (function () {
     function TemplateSrvMock() {
     }

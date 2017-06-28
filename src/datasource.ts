@@ -1,5 +1,5 @@
-///<reference path="../typings/index.d.ts" />
-
+import * as _ from "lodash";
+import * as angular from "angular";
 import * as moment from "moment";
 
 export default class GnocchiDatasource {

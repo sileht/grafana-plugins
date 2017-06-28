@@ -1,4 +1,5 @@
-///<reference path="../typings/index.d.ts" />
+
+import * as _ from "lodash";
 
 export class GnocchiDatasourceQueryCtrl {
   static templateUrl = 'partials/query.editor.html';

@@ -1,5 +1,3 @@
-///<reference path="../../typings/index.d.ts" />
-
 import {Datasource} from "../module";
 import BackendSrvMock from "./mocks/backendsrv";
 import TemplateSrvMock from "./mocks/templatesrv";

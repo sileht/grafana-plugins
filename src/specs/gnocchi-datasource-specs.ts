@@ -180,7 +180,7 @@ describe('GnocchiDatasource', function() {
     var query = {
       range: { from: moment.utc([2014, 3, 10, 3, 20, 10]), to: moment.utc([2014, 3, 20, 3, 20, 10]) },
       targets: [{ hide: false, queryMode: 'resource_search', resource_search: '{"=": {"server_group": "autoscalig_group"}}',
-        resource_type: 'instance', label: '$display_name', metric_name: 'cpu_*', aggregator: 'max' }],
+        resource_type: 'instance', label: '$display_name', metric_name: 'cpu_.*', aggregator: 'max' }],
       interval: '1s'
     };
 

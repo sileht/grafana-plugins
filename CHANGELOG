@@ -1,5 +1,6 @@
 Version 1.3.0
 
+* Metric name can be a wildcard for resource search queries
 * The option need_overlap can be set
 * Resource attribute used in label must be prefixed by "$" - breaking change
 

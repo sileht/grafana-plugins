@@ -609,7 +609,4 @@ describe('GnocchiDatasource', function() {
     });
   });
 
-
-
 });
-;

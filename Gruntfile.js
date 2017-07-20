@@ -17,6 +17,7 @@ module.exports = function(grunt) {
           src: ['src/**/*.ts'],
           dest: 'dist/',
           options: {
+              rootDir: "src/",
               target: 'es5',
               module: 'commonjs',
               sourceMap: true,

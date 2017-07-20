@@ -520,5 +520,4 @@ describe('GnocchiDatasource', function () {
         });
     });
 });
-;
 //# sourceMappingURL=gnocchi-datasource-specs.js.map

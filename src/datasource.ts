@@ -127,7 +127,9 @@ export default class GnocchiDatasource {
         }
 
         resource_type = resource_type || "generic";
-
+        if (granularity !== '') {
+            default_measures_req.params.granularity = granularity;
+        }
         if (target.queryMode === "resource_search") {
           var resource_search_req = self.buildQueryRequest(resource_type, resource_search);
           return self._gnocchi_request(resource_search_req).then(function(result) {
@@ -139,9 +141,6 @@ export default class GnocchiDatasource {
 
               return _.map(metric_names, function(metric_name){
                 var measures_req = _.merge({}, default_measures_req);
-                if (granularity !== '') {
-                    measures_req.params.granularity = granularity;
-                }
                 measures_req.url = ('v1/resource/' + resource_type +
                                     '/' + resource["id"] + '/metric/' + metric_name + '/measures');
                 var final_label = self._compute_label(label, resource);

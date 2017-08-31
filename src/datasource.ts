@@ -90,6 +90,7 @@ export default class GnocchiDatasource {
             'end': null,
             'stop': null,
             'granularity': null,
+            'transform': null,
             'filter': null,
             'needed_overlap': null,
             'metric': null
@@ -114,6 +115,7 @@ export default class GnocchiDatasource {
         var metric_id;
         var user_label;
         var granularity;
+        var transform;
 
         try {
           metric_regex = self.templateSrv.replace(target.metric_name, options.scopedVars);
@@ -123,6 +125,7 @@ export default class GnocchiDatasource {
           metric_id = self.templateSrv.replace(target.metric_id, options.scopedVars);
           user_label = self.templateSrv.replace(target.label, options.scopedVars);
           granularity = self.templateSrv.replace(target.granularity, options.scopedVars);
+          transform = self.templateSrv.replace(target.transform, options.scopedVars);
         } catch (err) {
           return self.$q.reject(err);
         }
@@ -130,6 +133,9 @@ export default class GnocchiDatasource {
         resource_type = resource_type || "generic";
         if (granularity) {
             default_measures_req.params.granularity = granularity;
+        }
+        if (transform) {
+            default_measures_req.params.transform = transform;
         }
         if (target.queryMode === "resource_search" || target.queryMode === "resource_aggregation") {
           var resource_search_req = self.buildQueryRequest(resource_type, resource_search);

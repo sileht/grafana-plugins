@@ -138,16 +138,9 @@ export default class GnocchiDatasource {
             var metrics = {};
 
             _.forEach(result, function(resource) {
-              var resource_label = self._compute_label(user_label, resource);
               _.forOwn(resource["metrics"], function (id, name) {
                 if (re.test(name)) {
-                  var label = resource_label;
-                  if ( user_label === "$metric") {
-                    label = name;
-                  } else if (name !== metric_regex){
-                    label = label + " - " + name;
-                  }
-                  metrics[id] = label;
+                  metrics[id] = self._compute_label(user_label, resource, name);
                 }
               });
             });
@@ -171,12 +164,7 @@ export default class GnocchiDatasource {
             url: 'v1/resource/' + resource_type + '/' + resource_id,
           };
           return self._gnocchi_request(resource_req).then(function(resource) {
-            var label;
-            if ( user_label === "$metric") {
-                label = metric_regex;
-            } else {
-                label = self._compute_label(user_label, resource);
-            }
+            var label = self._compute_label(user_label, resource, metric_regex);
             default_measures_req.url = ('v1/resource/' + resource_type+ '/' +
                                         resource_id + '/metric/' + metric_regex + '/measures');
             return self._retrieve_measures(label, default_measures_req);
@@ -187,12 +175,10 @@ export default class GnocchiDatasource {
           };
           return self._gnocchi_request(metric_req).then(function(metric) {
             var label;
-            if (!user_label || user_label === "$metric") {
-              label = metric['name'];
-            } else if (metric.resource !== undefined) {
+            if (user_label) {
               // NOTE(sileht): The resource returned is currently incomplete
               // https://github.com/gnocchixyz/gnocchi/issues/310
-              label = self._compute_label(user_label, metric['resource']);
+              label = self._compute_label(user_label, metric['resource'], metric["name"]);
             } else {
               label = metric_id;
             }
@@ -241,16 +227,20 @@ export default class GnocchiDatasource {
       });
     }
 
-    _compute_label(label, resource){
+    _compute_label(label, resource, metric){
       if (label) {
-        if (label.startsWith("$")) {
-          var attr = label.slice(1);
-          return resource[attr] || "attribute " + attr + " not found";
-        } else {
-          return label;
+        var res = label;
+        if (resource){
+          _.forOwn(resource, function (value, key) {
+              res = res.replace("${" + key + "}", value);
+              res = res.replace("$" + key, value);
+          });
         }
+        res = res.replace("$metric", metric);
+        res = res.replace("${metric}", metric);
+        return res;
       } else {
-        return resource["id"] ;
+        return ((resource) ? resource["id"] : "no label");
       }
     }
 

@@ -276,7 +276,7 @@ describe('GnocchiDatasource', function() {
     var query = {
       range: { from: moment.utc([2014, 3, 10, 3, 20, 10]), to: moment.utc([2014, 3, 20, 3, 20, 10]) },
       targets: [{ hide: false, queryMode: 'resource_search', resource_search: '{"=": {"server_group": "autoscalig_group"}}',
-        resource_type: 'instance', label: '$display_name', metric_name: 'cpu_.*', aggregator: 'max' }],
+        resource_type: 'instance', label: '$display_name-${host}.foo-$type $metric', metric_name: 'cpu_.*', aggregator: 'max' }],
       interval: '1s'
     };
 
@@ -293,7 +293,7 @@ describe('GnocchiDatasource', function() {
       },
       {
         "display_name": "mysecondvm",
-        "host": "compute1",
+        "host": "compute3",
         "id": "f898ba55-bbea-460f-985c-3d1243348304",
         "image_ref": "http://image",
         "type": "instance",
@@ -344,9 +344,9 @@ describe('GnocchiDatasource', function() {
 
     it('should return series list', function() {
       expect(results.data.length).to.be(3);
-      expect(results.data[0].target).to.be('myfirstvm - cpu_util');
-      expect(results.data[1].target).to.be('mysecondvm - cpu_util');
-      expect(results.data[2].target).to.be('mysecondvm - cpu_time');
+      expect(results.data[0].target).to.be('myfirstvm-compute1.foo-instance cpu_util');
+      expect(results.data[1].target).to.be('mysecondvm-compute3.foo-instance cpu_util');
+      expect(results.data[2].target).to.be('mysecondvm-compute3.foo-instance cpu_time');
       expect(results.data[0].datapoints[0][0]).to.be('43.1');
       expect(results.data[0].datapoints[0][1]).to.be(1412606037000);
       expect(results.data[0].datapoints[1][0]).to.be('12');

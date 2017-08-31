@@ -38,11 +38,11 @@
             <label class="gf-form-label query-keyword width-8">Metric ID</label>
             <input type="text" class="gf-form-input" ng-model="ctrl.target.metric_id" bs-typeahead="ctrl.suggestMetricIDs" spellcheck='false' placeholder="metric id" data-min-length=0 ng-model-onblur ng-blur="ctrl.queryUpdated()">
         </div>
-        <div class="gf-form max-width-20" ng-if="['resource', 'resource_search', 'resource_aggregation'].indexOf(ctrl.target.queryMode) >= 0" >
+        <div class="gf-form max-width-20">
             <label class="gf-form-label query-keyword width-8">Label</label>
             <input type="text" class="gf-form-input" ng-model="ctrl.target.label" spellcheck='false' placeholder="$id" data-min-length=0 ng-model-onblur ng-blur="ctrl.queryUpdated()">
         </div>
-        <div class="gf-form max-width-20" ng-if="['resource', 'resource_search', 'resource_aggregation'].indexOf(ctrl.target.queryMode) >= 0" >
+        <div class="gf-form max-width-20">
             <label class="gf-form-label query-keyword width-8">Granularity</label>
             <input type="text" class="gf-form-input" ng-model="ctrl.target.granularity" spellcheck='false' placeholder="seconds" data-min-length=0 ng-model-onblur ng-blur="ctrl.queryUpdated()">
         </div>

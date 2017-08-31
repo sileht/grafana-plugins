@@ -84,6 +84,42 @@ For details of `Query` format, please refer to the Gnocchi and Gnocchi client do
 - [Search for resource - Gnocchi client Documentation](http://gnocchi.xyz/gnocchiclient/shell.html#gnocchi-resource-search) for expression format
 - [Search for resource - Gnocchi Documentation](http://gnocchi.xyz/rest.html#searching-for-resources) for the raw json format.
 
+## Labels
+
+Labels can be expressed with resources attributes and metric name. To do so attribute must be surrounded by ${} or prefixed by $.
+
+For example, takes the metric regex "cpu_*", the label
+"$display_name-${host}.foo-$type $metric" and a query that returns these
+resources::
+
+    [
+      {
+        "display_name": "myfirstvm",
+        "host": "compute1",
+        "id": "6868da77-fa82-4e67-aba9-270c5ae8cbca",
+        "image_ref": "http://image",
+        "type": "instance",
+        "server_group": "autoscalig_group",
+        "metrics": {"cpu_util": "1634173a-e3b8-4119-9eba-fa9a4d971c3b"}
+      },
+      {
+        "display_name": "mysecondvm",
+        "host": "compute3",
+        "id": "f898ba55-bbea-460f-985c-3d1243348304",
+        "image_ref": "http://image",
+        "type": "instance",
+        "server_group": "autoscalig_group",
+        "metrics": {"cpu_util": "58b233f4-65ba-4aeb-97ba-b8bc0feec97e",
+                    "cpu_time": "6ff95458-97b4-4b08-af03-7d18b05d277e"}
+      }
+    ]
+
+The resulting labels are::
+
+  myfirstvm-compute1.foo-instance cpu_util
+  mysecondvm-compute3.foo-instance cpu_util
+  mysecondvm-compute3.foo-instance cpu_time
+
 ## Templated queries
 
 Gnocchi Datasource Plugin provides following functions in `Variables values query` field in Templating Editor.

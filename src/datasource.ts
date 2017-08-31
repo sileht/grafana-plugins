@@ -128,7 +128,7 @@ export default class GnocchiDatasource {
         }
 
         resource_type = resource_type || "generic";
-        if (granularity !== '') {
+        if (granularity) {
             default_measures_req.params.granularity = granularity;
         }
         if (target.queryMode === "resource_search" || target.queryMode === "resource_aggregation") {
@@ -138,16 +138,9 @@ export default class GnocchiDatasource {
             var metrics = {};
 
             _.forEach(result, function(resource) {
-              var resource_label = self._compute_label(user_label, resource);
               _.forOwn(resource["metrics"], function (id, name) {
                 if (re.test(name)) {
-                  var label = resource_label;
-                  if ( user_label === "$metric") {
-                    label = name;
-                  } else if (name !== metric_regex){
-                    label = label + " - " + name;
-                  }
-                  metrics[id] = label;
+                  metrics[id] = self._compute_label(user_label, resource, name);
                 }
               });
             });
@@ -163,24 +156,35 @@ export default class GnocchiDatasource {
               measures_req.url = 'v1/aggregation/metric';
               measures_req.params.metric = _.keysIn(metrics);
               measures_req.params.needed_overlap = target.needed_overlap;
-                console.log(measures_req);
               return self._retrieve_measures(user_label || "unlabeled", measures_req);
             }
           });
         } else if (target.queryMode === "resource") {
           var resource_req = {
-            url: 'v1/resource/' + resource_type+ '/' + resource_id,
-            method: 'GET'
+            url: 'v1/resource/' + resource_type + '/' + resource_id,
           };
-
           return self._gnocchi_request(resource_req).then(function(resource) {
+            var label = self._compute_label(user_label, resource, metric_regex);
             default_measures_req.url = ('v1/resource/' + resource_type+ '/' +
-                                        resource_id + '/metric/' + metric_regex+ '/measures');
-            return self._retrieve_measures(self._compute_label(user_label, resource), default_measures_req);
+                                        resource_id + '/metric/' + metric_regex + '/measures');
+            return self._retrieve_measures(label, default_measures_req);
           });
         } else if (target.queryMode === "metric") {
-          default_measures_req.url = 'v1/metric/' + metric_id + '/measures';
-          return self._retrieve_measures(metric_id, default_measures_req);
+          var metric_req = {
+            url: 'v1/metric/' + metric_id,
+          };
+          return self._gnocchi_request(metric_req).then(function(metric) {
+            var label;
+            if (user_label) {
+              // NOTE(sileht): The resource returned is currently incomplete
+              // https://github.com/gnocchixyz/gnocchi/issues/310
+              label = self._compute_label(user_label, metric['resource'], metric["name"]);
+            } else {
+              label = metric_id;
+            }
+            default_measures_req.url = 'v1/metric/' + metric_id + '/measures';
+            return self._retrieve_measures(label, default_measures_req);
+          });
         }
       });
 
@@ -223,16 +227,20 @@ export default class GnocchiDatasource {
       });
     }
 
-    _compute_label(label, resource){
+    _compute_label(label, resource, metric){
       if (label) {
-        if (label.startsWith("$")) {
-          var attr = label.slice(1);
-          return resource[attr] || "attribute " + attr + " not found";
-        } else {
-          return label;
+        var res = label;
+        if (resource){
+          _.forOwn(resource, function (value, key) {
+              res = res.replace("${" + key + "}", value);
+              res = res.replace("$" + key, value);
+          });
         }
+        res = res.replace("$metric", metric);
+        res = res.replace("${metric}", metric);
+        return res;
       } else {
-        return resource["id"] ;
+        return ((resource) ? resource["id"] : "no label");
       }
     }
 
@@ -480,7 +488,7 @@ export default class GnocchiDatasource {
       } else {
         callback().then(undefined, function(reason) {
           if (reason.status === undefined){
-            reason.message = "Gnocchi error: No response status code, is CORS correctly configured ?";
+            reason.message = "Gnocchi error: No response status code, is CORS correctly configured ? (detail: " + reason + ")";
             deferred.reject(reason);
           } else if (reason.status === 0){
             reason.message = "Gnocchi error: Connection failed";

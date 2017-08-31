@@ -128,7 +128,7 @@ export default class GnocchiDatasource {
         }
 
         resource_type = resource_type || "generic";
-        if (granularity !== '') {
+        if (granularity) {
             default_measures_req.params.granularity = granularity;
         }
         if (target.queryMode === "resource_search" || target.queryMode === "resource_aggregation") {
@@ -163,14 +163,12 @@ export default class GnocchiDatasource {
               measures_req.url = 'v1/aggregation/metric';
               measures_req.params.metric = _.keysIn(metrics);
               measures_req.params.needed_overlap = target.needed_overlap;
-                console.log(measures_req);
               return self._retrieve_measures(user_label || "unlabeled", measures_req);
             }
           });
         } else if (target.queryMode === "resource") {
           var resource_req = {
-            url: 'v1/resource/' + resource_type+ '/' + resource_id,
-            method: 'GET'
+            url: 'v1/resource/' + resource_type + '/' + resource_id,
           };
           return self._gnocchi_request(resource_req).then(function(resource) {
             var label;
@@ -184,8 +182,23 @@ export default class GnocchiDatasource {
             return self._retrieve_measures(label, default_measures_req);
           });
         } else if (target.queryMode === "metric") {
-          default_measures_req.url = 'v1/metric/' + metric_id + '/measures';
-          return self._retrieve_measures(metric_id, default_measures_req);
+          var metric_req = {
+            url: 'v1/metric/' + metric_id,
+          };
+          return self._gnocchi_request(metric_req).then(function(metric) {
+            var label;
+            if (!user_label || user_label === "$metric") {
+              label = metric['name'];
+            } else if (metric.resource !== undefined) {
+              // NOTE(sileht): The resource returned is currently incomplete
+              // https://github.com/gnocchixyz/gnocchi/issues/310
+              label = self._compute_label(user_label, metric['resource']);
+            } else {
+              label = metric_id;
+            }
+            default_measures_req.url = 'v1/metric/' + metric_id + '/measures';
+            return self._retrieve_measures(label, default_measures_req);
+          });
         }
       });
 

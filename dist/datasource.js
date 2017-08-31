@@ -374,7 +374,7 @@ var GnocchiDatasource = (function () {
                     mandatory.push("Resource ID");
                 }
                 if (!target.metric_name) {
-                    mandatory.push("Metric name");
+                    mandatory.push("Metric regex");
                 }
                 break;
             case "resource_aggregation":

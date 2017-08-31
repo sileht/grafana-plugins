@@ -657,7 +657,7 @@ describe('GnocchiDatasource', function () {
         it('resource', function () {
             var target = { 'resource_id': '', 'queryMode': 'resource', 'metric_name': '' };
             var error = ds.validateTarget(target, false);
-            expect(error).to.be("Missing or invalid fields: Resource ID, Metric name");
+            expect(error).to.be("Missing or invalid fields: Resource ID, Metric regex");
         });
         it('metric', function () {
             var target = { 'metric_id': '', 'queryMode': 'metric' };

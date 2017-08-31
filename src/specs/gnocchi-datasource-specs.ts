@@ -672,20 +672,16 @@ describe('GnocchiDatasource', function() {
   });
 
 
-  // FIXME(sileht): The test is bugged
-  /*
   describe('validate query success', function() {
     it('no target error', function() {
       var target = {'resource_search': '{"=": {"id": "foobar"}}',
                     'queryMode': 'resource_search', 'metric_name': 'cpu_util'};
-      $httpBackend.expect('POST', "/v1/search/resource/generic").respond([]);
       $httpBackend.expect('POST', "/v1/search/resource/generic").respond([]);
       var error = ds.validateTarget(target, false);
       expect(error).to.be(undefined);
       $httpBackend.flush();
     });
   });
-  */
 
   describe('validate query missing field', function() {
     it('resource', function() {

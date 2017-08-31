@@ -480,7 +480,7 @@ export default class GnocchiDatasource {
       } else {
         callback().then(undefined, function(reason) {
           if (reason.status === undefined){
-            reason.message = "Gnocchi error: No response status code, is CORS correctly configured ?";
+            reason.message = "Gnocchi error: No response status code, is CORS correctly configured ? (detail: " + reason + ")";
             deferred.reject(reason);
           } else if (reason.status === 0){
             reason.message = "Gnocchi error: Connection failed";

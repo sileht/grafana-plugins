@@ -54,6 +54,11 @@
             <label class="gf-form-label query-keyword width-16">Percent of needed overlap</label>
             <input type="text" class="gf-form-input" ng-model="ctrl.target.need_overlap" spellcheck='false' placeholder="0" data-min-length=0 ng-model-onblur ng-blur="ctrl.queryUpdated()">
         </div>
+        <div class="gf-form max-width-20">
+            <label class="gf-form-label query-keyword width-16">Draw missing datapoint as zero</label>
+            <input type="checkbox" class="gf-form-input" ng-model="ctrl.target.draw_missing_datapoint_as_zero" ng-model-onblur ng-blur="ctrl.queryUpdated()">
+        </div>
+
     </div>
     <div class="gf-form-inline">
         <div class="gf-form max-width">

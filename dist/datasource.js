@@ -131,7 +131,7 @@ var GnocchiDatasource = (function () {
                         return self.$q.all(_.map(metrics, function (label, id) {
                             var measures_req = _.merge({}, default_measures_req);
                             measures_req.url = 'v1/metric/' + id + '/measures';
-                            return self._retrieve_measures(label, measures_req);
+                            return self._retrieve_measures(label, measures_req, target.draw_missing_datapoint_as_zero);
                         }));
                     }
                     else {
@@ -139,7 +139,7 @@ var GnocchiDatasource = (function () {
                         measures_req.url = 'v1/aggregation/metric';
                         measures_req.params.metric = _.keysIn(metrics);
                         measures_req.params.needed_overlap = target.needed_overlap;
-                        return self._retrieve_measures(user_label || "unlabeled", measures_req);
+                        return self._retrieve_measures(user_label || "unlabeled", measures_req, target.draw_missing_datapoint_as_zero);
                     }
                 });
             }
@@ -151,7 +151,7 @@ var GnocchiDatasource = (function () {
                     var label = self._compute_label(user_label, resource, metric_regex);
                     default_measures_req.url = ('v1/resource/' + resource_type + '/' +
                         resource_id + '/metric/' + metric_regex + '/measures');
-                    return self._retrieve_measures(label, default_measures_req);
+                    return self._retrieve_measures(label, default_measures_req, target.draw_missing_datapoint_as_zero);
                 });
             }
             else if (target.queryMode === "metric") {
@@ -169,7 +169,7 @@ var GnocchiDatasource = (function () {
                         label = metric_id;
                     }
                     default_measures_req.url = 'v1/metric/' + metric_id + '/measures';
-                    return self._retrieve_measures(label, default_measures_req);
+                    return self._retrieve_measures(label, default_measures_req, target.draw_missing_datapoint_as_zero);
                 });
             }
         });
@@ -177,7 +177,7 @@ var GnocchiDatasource = (function () {
             return { data: _.flatten(results) };
         });
     };
-    GnocchiDatasource.prototype._retrieve_measures = function (name, reqs) {
+    GnocchiDatasource.prototype._retrieve_measures = function (name, reqs, draw_missing_datapoint_as_zero) {
         var self = this;
         return self._gnocchi_request(reqs).then(function (result) {
             var dps = [];
@@ -194,11 +194,13 @@ var GnocchiDatasource = (function () {
                     if (timestamp.valueOf() >= last_timestamp.valueOf()) {
                         return;
                     }
-                    var c_timestamp = last_timestamp;
-                    c_timestamp.subtract(last_granularity, "seconds");
-                    while (timestamp.valueOf() < c_timestamp.valueOf()) {
-                        dps.push([0, c_timestamp.valueOf()]);
+                    if (draw_missing_datapoint_as_zero) {
+                        var c_timestamp = last_timestamp;
                         c_timestamp.subtract(last_granularity, "seconds");
+                        while (timestamp.valueOf() < c_timestamp.valueOf()) {
+                            dps.push([0, c_timestamp.valueOf()]);
+                            c_timestamp.subtract(last_granularity, "seconds");
+                        }
                     }
                 }
                 last_timestamp = timestamp;

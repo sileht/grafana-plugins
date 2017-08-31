@@ -172,11 +172,16 @@ export default class GnocchiDatasource {
             url: 'v1/resource/' + resource_type+ '/' + resource_id,
             method: 'GET'
           };
-
           return self._gnocchi_request(resource_req).then(function(resource) {
+            var label;
+            if ( user_label === "$metric") {
+                label = metric_regex;
+            } else {
+                label = self._compute_label(user_label, resource);
+            }
             default_measures_req.url = ('v1/resource/' + resource_type+ '/' +
-                                        resource_id + '/metric/' + metric_regex+ '/measures');
-            return self._retrieve_measures(self._compute_label(user_label, resource), default_measures_req);
+                                        resource_id + '/metric/' + metric_regex + '/measures');
+            return self._retrieve_measures(label, default_measures_req);
           });
         } else if (target.queryMode === "metric") {
           default_measures_req.url = 'v1/metric/' + metric_id + '/measures';

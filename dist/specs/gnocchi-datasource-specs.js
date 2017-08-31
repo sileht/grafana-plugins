@@ -83,22 +83,6 @@ describe('GnocchiDatasource', function () {
             });
         }, null);
     });
-    describe('Metric', function () {
-        assert_simple_test([{ queryMode: 'metric', metric_id: 'my_uuid', aggregator: 'max' }], 'GET', '/v1/metric/my_uuid/measures?aggregation=max&end=2014-04-20T03:20:10.000Z&start=2014-04-10T03:20:10.000Z' +
-            '&stop=2014-04-20T03:20:10.000Z', null, 'my_uuid', null, null);
-    });
-    describe('Resource aggregation JSON', function () {
-        assert_simple_test([{ queryMode: 'resource_aggregation', resource_search: '{"=": {"server_group": "autoscaling_group"}}',
-                resource_type: 'instance', label: 'my_aggregation', metric_name: 'cpu_util', aggregator: 'max' }], 'POST', "/v1/aggregation/resource/instance/metric/cpu_util?" +
-            "aggregation=max&end=2014-04-20T03:20:10.000Z&start=2014-04-10T03:20:10.000Z&stop=2014-04-20T03:20:10.000Z", { "=": { "server_group": "autoscaling_group" } }, 'my_aggregation', null, null);
-    });
-    describe('Resource aggregation expression', function () {
-        assert_simple_test([{ queryMode: 'resource_aggregation', resource_search: 'server_group=autoscaling_group',
-                resource_type: 'instance', label: 'my_aggregation', metric_name: 'cpu_util', aggregator: 'max' }], 'POST', "/v1/aggregation/resource/instance/metric/cpu_util?" +
-            "aggregation=max&end=2014-04-20T03:20:10.000Z" +
-            "&filter=server_group%3Dautoscaling_group" +
-            "&start=2014-04-10T03:20:10.000Z&stop=2014-04-20T03:20:10.000Z", null, 'my_aggregation', null, null);
-    });
     describe('MetricFindQuery resources() query', function () {
         var url_expected_search_resources = "/v1/search/resource/instance?filter=server_group%3D'autoscaling_group'";
         var response_search_resources = [
@@ -137,6 +121,127 @@ describe('GnocchiDatasource', function () {
             expect(results[1].text).to.be('mysecondvm');
         });
     });
+    describe('Metric', function () {
+        var query = {
+            range: { from: moment.utc([2014, 3, 10, 3, 20, 10]), to: moment.utc([2014, 3, 20, 3, 20, 10]) },
+            targets: [{ queryMode: 'metric', metric_id: 'my_uuid', aggregator: 'max', label: '$type' }],
+            interval: '1s'
+        };
+        var url_expected_metric = '/v1/metric/my_uuid';
+        var response_metric = {
+            "id": "my_uuid",
+            "name": "foobar",
+            "resource": {
+                "id": "6868da77-fa82-4e67-aba9-270c5ae8cbca",
+                "type": "instance",
+            }
+        };
+        var url_expected_measure = '/v1/metric/my_uuid/measures?aggregation=max&end=2014-04-20T03:20:10.000Z&start=2014-04-10T03:20:10.000Z' +
+            '&stop=2014-04-20T03:20:10.000Z';
+        var response_measure = [
+            ["2014-10-06T14:00:00+00:00", "600.0", "7"],
+            ["2014-10-06T14:20:00+00:00", "600.0", "5"],
+            ["2014-10-06T14:33:00+00:00", "60.0", "43.1"],
+            ["2014-10-06T14:34:00+00:00", "60.0", "12"],
+            ["2014-10-06T14:36:00+00:00", "60.0", "2"]
+        ];
+        var results;
+        beforeEach(function () {
+            $httpBackend.expect('GET', url_expected_metric).respond(response_metric);
+            $httpBackend.expect('GET', url_expected_measure).respond(response_measure);
+            ds.query(query).then(function (data) { results = data; });
+            $httpBackend.flush();
+        });
+        it("nothing more", function () {
+            $httpBackend.verifyNoOutstandingExpectation();
+            $httpBackend.verifyNoOutstandingRequest();
+        });
+        it('should return series list', function () {
+            expect(results.data.length).to.be(1);
+            expect(results.data[0].target).to.be('instance');
+            expect(results.data[0].datapoints).to.eql([
+                ['7', 1412604000000],
+                [0, 1412604600000],
+                ['5', 1412605200000],
+                [0, 1412605260000],
+                [0, 1412605320000],
+                [0, 1412605380000],
+                [0, 1412605440000],
+                [0, 1412605500000],
+                [0, 1412605560000],
+                [0, 1412605620000],
+                [0, 1412605680000],
+                [0, 1412605740000],
+                [0, 1412605800000],
+                [0, 1412605860000],
+                [0, 1412605920000],
+                ['43.1', 1412605980000],
+                ['12', 1412606040000],
+                [0, 1412606100000],
+                ['2', 1412606160000]
+            ]);
+        });
+    });
+    describe('Resource aggregation', function () {
+        var query = {
+            range: { from: moment.utc([2014, 3, 10, 3, 20, 10]), to: moment.utc([2014, 3, 20, 3, 20, 10]) },
+            targets: [{ hide: false, queryMode: 'resource_aggregation', resource_search: '{"=": {"server_group": "autoscalig_group"}}',
+                    resource_type: 'instance', label: 'mylabel', metric_name: 'cpu_.*', aggregator: 'max' }],
+            interval: '1s'
+        };
+        var url_expected_search_resources = "/v1/search/resource/instance";
+        var response_search_resources = [
+            {
+                "display_name": "myfirstvm",
+                "host": "compute1",
+                "id": "6868da77-fa82-4e67-aba9-270c5ae8cbca",
+                "image_ref": "http://image",
+                "type": "instance",
+                "server_group": "autoscalig_group",
+                "metrics": { "cpu_util": "1634173a-e3b8-4119-9eba-fa9a4d971c3b",
+                    "notcpu": "4d7c72a4-adc1-4fc1-b1f7-27b35a7b5f95" }
+            },
+            {
+                "display_name": "mysecondvm",
+                "host": "compute1",
+                "id": "f898ba55-bbea-460f-985c-3d1243348304",
+                "image_ref": "http://image",
+                "type": "instance",
+                "server_group": "autoscalig_group",
+                "metrics": { "cpu_util": "58b233f4-65ba-4aeb-97ba-b8bc0feec97e",
+                    "cpu_time": "6ff95458-97b4-4b08-af03-7d18b05d277e" }
+            }
+        ];
+        var url_expected_get_measures = "/v1/aggregation/metric?metric=1634173a-e3b8-4119-9eba-fa9a4d971c3b&" +
+            "metric=58b233f4-65ba-4aeb-97ba-b8bc0feec97e&metric=6ff95458-97b4-4b08-af03-7d18b05d277e&" +
+            "aggregation=max&end=2014-04-20T03:20:10.000Z&start=2014-04-10T03:20:10.000Z&stop=2014-04-20T03:20:10.000Z";
+        var response_get_measures = [
+            ["2014-10-06T14:33:57+00:00", "60.0", "43.1"],
+            ["2014-10-06T14:34:12+00:00", "60.0", "12"],
+            ["2014-10-06T14:34:20+00:00", "60.0", "2"],
+        ];
+        var results;
+        beforeEach(function () {
+            $httpBackend.expect('POST', url_expected_search_resources).respond(response_search_resources);
+            $httpBackend.expect('GET', url_expected_get_measures).respond(response_get_measures);
+            ds.query(query).then(function (data) { results = data; });
+            $httpBackend.flush();
+        });
+        it("nothing more", function () {
+            $httpBackend.verifyNoOutstandingExpectation();
+            $httpBackend.verifyNoOutstandingRequest();
+        });
+        it('should return series list', function () {
+            expect(results.data.length).to.be(1);
+            expect(results.data[0].target).to.be('mylabel');
+            expect(results.data[0].datapoints[0][0]).to.be('43.1');
+            expect(results.data[0].datapoints[0][1]).to.be(1412606037000);
+            expect(results.data[0].datapoints[1][0]).to.be('12');
+            expect(results.data[0].datapoints[1][1]).to.be(1412606052000);
+            expect(results.data[0].datapoints[2][0]).to.be('2');
+            expect(results.data[0].datapoints[2][1]).to.be(1412606060000);
+        });
+    });
     describe('Resource search JSON', function () {
         var query = {
             range: { from: moment.utc([2014, 3, 10, 3, 20, 10]), to: moment.utc([2014, 3, 20, 3, 20, 10]) },
@@ -162,25 +267,25 @@ describe('GnocchiDatasource', function () {
                 "image_ref": "http://image",
                 "type": "instance",
                 "server_group": "autoscalig_group",
-                "metrics": { "cpu_util": "1634173a-e3b8-4119-9eba-fa9a4d971c3b",
-                    "cpu_time": "1634173a-e3b8-4119-9eba-fa9a4d971c3b" }
+                "metrics": { "cpu_util": "58b233f4-65ba-4aeb-97ba-b8bc0feec97e",
+                    "cpu_time": "6ff95458-97b4-4b08-af03-7d18b05d277e" }
             }
         ];
-        var url_expected_get_measures1 = "/v1/resource/instance/6868da77-fa82-4e67-aba9-270c5ae8cbca/metric/cpu_util/measures?" +
+        var url_expected_get_measures1 = "/v1/metric/1634173a-e3b8-4119-9eba-fa9a4d971c3b/measures?" +
             "aggregation=max&end=2014-04-20T03:20:10.000Z&start=2014-04-10T03:20:10.000Z&stop=2014-04-20T03:20:10.000Z";
         var response_get_measures1 = [
             ["2014-10-06T14:33:57+00:00", "60.0", "43.1"],
             ["2014-10-06T14:34:12+00:00", "60.0", "12"],
             ["2014-10-06T14:34:20+00:00", "60.0", "2"],
         ];
-        var url_expected_get_measures2 = "/v1/resource/instance/f898ba55-bbea-460f-985c-3d1243348304/metric/cpu_util/measures?" +
+        var url_expected_get_measures2 = "/v1/metric/58b233f4-65ba-4aeb-97ba-b8bc0feec97e/measures?" +
             "aggregation=max&end=2014-04-20T03:20:10.000Z&start=2014-04-10T03:20:10.000Z&stop=2014-04-20T03:20:10.000Z";
         var response_get_measures2 = [
             ["2014-10-06T14:33:57+00:00", "60.0", "22.1"],
             ["2014-10-06T14:34:12+00:00", "60.0", "3"],
             ["2014-10-06T14:34:20+00:00", "60.0", "30"],
         ];
-        var url_expected_get_measures3 = "/v1/resource/instance/f898ba55-bbea-460f-985c-3d1243348304/metric/cpu_time/measures?" +
+        var url_expected_get_measures3 = "/v1/metric/6ff95458-97b4-4b08-af03-7d18b05d277e/measures?" +
             "aggregation=max&end=2014-04-20T03:20:10.000Z&start=2014-04-10T03:20:10.000Z&stop=2014-04-20T03:20:10.000Z";
         var response_get_measures3 = [
             ["2014-10-06T14:33:57+00:00", "60.0", "2"],
@@ -238,17 +343,17 @@ describe('GnocchiDatasource', function () {
                 "image_ref": "http://image",
                 "type": "instance",
                 "server_group": "autoscalig_group",
-                "metrics": { "cpu_util": "1634173a-e3b8-4119-9eba-fa9a4d971c3b" }
+                "metrics": { "cpu_util": "d93563ef-2e19-4a02-a27b-7fc7bfb52d5e" }
             }
         ];
-        var url_expected_get_measures1 = "/v1/resource/instance/6868da77-fa82-4e67-aba9-270c5ae8cbca/metric/cpu_util/measures?" +
+        var url_expected_get_measures1 = "/v1/metric/1634173a-e3b8-4119-9eba-fa9a4d971c3b/measures?" +
             "aggregation=max&end=2014-04-20T03:20:10.000Z&start=2014-04-10T03:20:10.000Z&stop=2014-04-20T03:20:10.000Z";
         var response_get_measures1 = [
             ["2014-10-06T14:33:57+00:00", "60.0", "43.1"],
             ["2014-10-06T14:34:12+00:00", "60.0", "12"],
             ["2014-10-06T14:34:20+00:00", "60.0", "2"],
         ];
-        var url_expected_get_measures2 = "/v1/resource/instance/f898ba55-bbea-460f-985c-3d1243348304/metric/cpu_util/measures?" +
+        var url_expected_get_measures2 = "/v1/metric/d93563ef-2e19-4a02-a27b-7fc7bfb52d5e/measures?" +
             "aggregation=max&end=2014-04-20T03:20:10.000Z&start=2014-04-10T03:20:10.000Z&stop=2014-04-20T03:20:10.000Z";
         var response_get_measures2 = [
             ["2014-10-06T14:33:57+00:00", "60.0", "22.1"],

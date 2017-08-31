@@ -17,8 +17,7 @@ var BackendSrvMock = (function () {
                     error: err.statusText
                 };
             }
-            // for Prometheus
-            if (!err.data.message && _.isString(err.data.error)) {
+            if (err.data && !err.data.message && _.isString(err.data.error)) {
                 err.data.message = err.data.error;
             }
             throw err;

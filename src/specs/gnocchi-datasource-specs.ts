@@ -143,7 +143,7 @@ describe('GnocchiDatasource', function() {
   describe('Metric', function() {
     var query = {
       range: { from: moment.utc([2014, 3, 10, 3, 20, 10]), to: moment.utc([2014, 3, 20, 3, 20, 10]) },
-      targets: [{ queryMode: 'metric', metric_id: 'my_uuid', aggregator: 'max', label: '$type'}],
+      targets: [{ queryMode: 'metric', metric_id: 'my_uuid', aggregator: 'max', label: '$type', transform: "resample(60)"}],
       interval: '1s'
     };
     var url_expected_metric = '/v1/metric/my_uuid';
@@ -156,7 +156,7 @@ describe('GnocchiDatasource', function() {
       }
     };
     var url_expected_measure = '/v1/metric/my_uuid/measures?aggregation=max&end=2014-04-20T03:20:10.000Z&start=2014-04-10T03:20:10.000Z' +
-          '&stop=2014-04-20T03:20:10.000Z';
+          '&stop=2014-04-20T03:20:10.000Z&transform=resample(60)';
     var response_measure = [
       ["2014-10-06T14:00:00+00:00", "600.0", "7"],
       ["2014-10-06T14:20:00+00:00", "600.0", "5"],

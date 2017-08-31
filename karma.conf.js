@@ -38,7 +38,7 @@ module.exports = function(config) {
     singleRun: true,
     autoWatchBatchDelay: 1000,
     browserNoActivityTimeout: 60000,
-    browserify: {}
+    browserify: {debug:true}
 
   });
 

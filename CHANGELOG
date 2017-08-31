@@ -1,3 +1,17 @@
+Version 1.5.0
+
+* Behavior of missing datapoints is configurable (shown as zero or not)
+* Add support for Gnocchi transformation
+
+Version 1.4.0
+
+* Granularity can be set on all query Mode
+* $metric in label show the metric name
+* Label can be created dynamically with resource attribute prefixed by $ or surrounded by ${}
+  example: $host - $type - $metric
+* Resource aggregation can also aggregate metrics of the same resource
+  by using regex in metric name
+
 Version 1.3.1
 
 * Metric name use regex and not wildcard

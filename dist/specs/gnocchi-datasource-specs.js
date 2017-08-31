@@ -75,7 +75,8 @@ describe('GnocchiDatasource', function () {
         }));
     }
     describe('Resource', function () {
-        assert_simple_test([{ queryMode: 'resource', resource_type: 'instance', resource_id: 'my_uuid', metric_name: 'cpu_util', aggregator: 'max' }], 'GET', "/v1/resource/instance/my_uuid/metric/cpu_util/measures?" +
+        assert_simple_test([{ queryMode: 'resource', resource_type: 'instance', resource_id: 'my_uuid', metric_name: 'cpu_util', aggregator: 'max',
+                draw_missing_datapoint_as_zero: true }], 'GET', "/v1/resource/instance/my_uuid/metric/cpu_util/measures?" +
             "aggregation=max&end=2014-04-20T03:20:10.000Z&start=2014-04-10T03:20:10.000Z&stop=2014-04-20T03:20:10.000Z", null, '6868da77-fa82-4e67-aba9-270c5ae8cbca', function () {
             $httpBackend.expect("GET", "/v1/resource/instance/my_uuid").respond({
                 "display_name": "myfirstvm",
@@ -121,10 +122,11 @@ describe('GnocchiDatasource', function () {
             expect(results[1].text).to.be('mysecondvm');
         });
     });
-    describe('Metric', function () {
+    describe('Metric transform and zero', function () {
         var query = {
             range: { from: moment.utc([2014, 3, 10, 3, 20, 10]), to: moment.utc([2014, 3, 20, 3, 20, 10]) },
-            targets: [{ queryMode: 'metric', metric_id: 'my_uuid', aggregator: 'max', label: '$type' }],
+            targets: [{ queryMode: 'metric', metric_id: 'my_uuid', aggregator: 'max', label: '$type', transform: "resample(60)",
+                    draw_missing_datapoint_as_zero: true }],
             interval: '1s'
         };
         var url_expected_metric = '/v1/metric/my_uuid';
@@ -137,7 +139,7 @@ describe('GnocchiDatasource', function () {
             }
         };
         var url_expected_measure = '/v1/metric/my_uuid/measures?aggregation=max&end=2014-04-20T03:20:10.000Z&start=2014-04-10T03:20:10.000Z' +
-            '&stop=2014-04-20T03:20:10.000Z';
+            '&stop=2014-04-20T03:20:10.000Z&transform=resample(60)';
         var response_measure = [
             ["2014-10-06T14:00:00+00:00", "600.0", "7"],
             ["2014-10-06T14:20:00+00:00", "600.0", "5"],
@@ -178,6 +180,54 @@ describe('GnocchiDatasource', function () {
                 ['43.1', 1412605980000],
                 ['12', 1412606040000],
                 [0, 1412606100000],
+                ['2', 1412606160000]
+            ]);
+        });
+    });
+    describe('Metric no transform, no zero', function () {
+        var query = {
+            range: { from: moment.utc([2014, 3, 10, 3, 20, 10]), to: moment.utc([2014, 3, 20, 3, 20, 10]) },
+            targets: [{ queryMode: 'metric', metric_id: 'my_uuid', aggregator: 'max', label: '$type',
+                    draw_missing_datapoint_as_zero: false }],
+            interval: '1s'
+        };
+        var url_expected_metric = '/v1/metric/my_uuid';
+        var response_metric = {
+            "id": "my_uuid",
+            "name": "foobar",
+            "resource": {
+                "id": "6868da77-fa82-4e67-aba9-270c5ae8cbca",
+                "type": "instance",
+            }
+        };
+        var url_expected_measure = '/v1/metric/my_uuid/measures?aggregation=max&end=2014-04-20T03:20:10.000Z&start=2014-04-10T03:20:10.000Z' +
+            '&stop=2014-04-20T03:20:10.000Z';
+        var response_measure = [
+            ["2014-10-06T14:00:00+00:00", "600.0", "7"],
+            ["2014-10-06T14:20:00+00:00", "600.0", "5"],
+            ["2014-10-06T14:33:00+00:00", "60.0", "43.1"],
+            ["2014-10-06T14:34:00+00:00", "60.0", "12"],
+            ["2014-10-06T14:36:00+00:00", "60.0", "2"]
+        ];
+        var results;
+        beforeEach(function () {
+            $httpBackend.expect('GET', url_expected_metric).respond(response_metric);
+            $httpBackend.expect('GET', url_expected_measure).respond(response_measure);
+            ds.query(query).then(function (data) { results = data; });
+            $httpBackend.flush();
+        });
+        it("nothing more", function () {
+            $httpBackend.verifyNoOutstandingExpectation();
+            $httpBackend.verifyNoOutstandingRequest();
+        });
+        it('should return series list', function () {
+            expect(results.data.length).to.be(1);
+            expect(results.data[0].target).to.be('instance');
+            expect(results.data[0].datapoints).to.eql([
+                ['7', 1412604000000],
+                ['5', 1412605200000],
+                ['43.1', 1412605980000],
+                ['12', 1412606040000],
                 ['2', 1412606160000]
             ]);
         });
@@ -593,20 +643,16 @@ describe('GnocchiDatasource', function () {
             expect(results[1]).to.be('cpu_util');
         });
     });
-    // FIXME(sileht): The test is bugged
-    /*
-    describe('validate query success', function() {
-      it('no target error', function() {
-        var target = {'resource_search': '{"=": {"id": "foobar"}}',
-                      'queryMode': 'resource_search', 'metric_name': 'cpu_util'};
-        $httpBackend.expect('POST', "/v1/search/resource/generic").respond([]);
-        $httpBackend.expect('POST', "/v1/search/resource/generic").respond([]);
-        var error = ds.validateTarget(target, false);
-        expect(error).to.be(undefined);
-        $httpBackend.flush();
-      });
+    describe('validate query success', function () {
+        it('no target error', function () {
+            var target = { 'resource_search': '{"=": {"id": "foobar"}}',
+                'queryMode': 'resource_search', 'metric_name': 'cpu_util' };
+            $httpBackend.expect('POST', "/v1/search/resource/generic").respond([]);
+            var error = ds.validateTarget(target, false);
+            expect(error).to.be(undefined);
+            $httpBackend.flush();
+        });
     });
-    */
     describe('validate query missing field', function () {
         it('resource', function () {
             var target = { 'resource_id': '', 'queryMode': 'resource', 'metric_name': '' };

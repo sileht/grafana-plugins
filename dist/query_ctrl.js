@@ -24,6 +24,9 @@ var GnocchiDatasourceQueryCtrl = (function () {
         if (!this.target.aggregator) {
             this.target.aggregator = 'mean';
         }
+        if (!this.target.draw_missing_datapoint_as_zero === undefined) {
+            this.target.draw_missing_datapoint_as_zero = true;
+        }
         if (!this.target.queryMode) {
             this.target.queryMode = "resource_search";
         }

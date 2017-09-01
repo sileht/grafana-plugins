@@ -23,10 +23,6 @@ export class GnocchiDatasourceQueryCtrl {
     this.$scope = $scope;
     this.panel = this.panelCtrl.panel;
 
-    // TODO(sileht): Allows custom
-    this.aggregators = ['mean', 'sum', 'min', 'max',
-        'std', 'median', 'first', 'last', 'count'].concat(
-        _.range(1, 100).map(function (i) { return i + "pct"; }));
     this.queryModes = [
         {text: 'resource search', value: 'resource_search'},
         {text: 'resource search (aggregated measurements)', value: 'resource_aggregation'},
@@ -40,8 +36,9 @@ export class GnocchiDatasourceQueryCtrl {
 
     // default
     if (!this.target.aggregator) {
-        this.target.aggregator = 'mean' ;
+        this.target.aggregator = 'mean';
     }
+
     if (this.target.draw_missing_datapoint_as_zero === undefined) {
         this.target.draw_missing_datapoint_as_zero = true;
     }
@@ -67,6 +64,25 @@ export class GnocchiDatasourceQueryCtrl {
     };
 
     this.queryUpdated();
+  }
+
+
+  getAggregators() {
+    return _.map(
+        ['mean', 'sum', 'min', 'max',
+         'std', 'median', 'first', 'last', 'count', 'rate:last',
+         '5pct', '10pct', '90pct', '95pct'],
+        function(v) {
+            return {text: v, value: v};
+        }
+    );
+  }
+
+  setAggregator(option) {
+      if (option !== undefined) {
+        this.target.aggregator = option.value;
+      }
+      this.queryUpdated();
   }
 
   refresh(){

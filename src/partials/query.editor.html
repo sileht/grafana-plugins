@@ -48,7 +48,7 @@
         </div>
         <div class="gf-form">
             <label class="gf-form-label query-keyword width-8">Aggregator</label>
-            <select ng-model="ctrl.target.aggregator" class="gf-form-input input-small" ng-options="a for a in ctrl.aggregators" ng-change="ctrl.queryUpdated()"> </select>
+            <gf-form-dropdown css-class="width-12" allow-custom="true" model="ctrl.target.aggregator" get-options="ctrl.getAggregators()" on-change="ctrl.setAggregator($option)"></gf-form-dropdown>
         </div>
         <div class="gf-form max-width-20" ng-if="['resource_aggregation'].indexOf(ctrl.target.queryMode) >= 0" >
             <label class="gf-form-label query-keyword width-16">Percent of needed overlap</label>
@@ -56,7 +56,7 @@
         </div>
         <div class="gf-form max-width-20">
             <label class="gf-form-label query-keyword width-16">Missing datapoints as zero</label>
-            <gf-form-switch class="cwgf-form" label-class="width-5" checked="ctrl.target.draw_missing_datapoint_as_zero" on-change="ctrl.queryUpdated()"></gf-form-switch>
+            <gf-form-switch class="gf-form" label-class="width-5" checked="ctrl.target.draw_missing_datapoint_as_zero" on-change="ctrl.queryUpdated()"></gf-form-switch>
         </div>
 
     </div>

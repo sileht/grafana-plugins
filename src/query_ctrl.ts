@@ -26,7 +26,7 @@ export class GnocchiDatasourceQueryCtrl {
     this.queryModes = [
         {text: 'resource search', value: 'resource_search'},
         {text: 'resource search (aggregated measurements)', value: 'resource_aggregation'},
-        {text: 'resource ID and metric name', value: 'resource'},
+        {text: 'resource ID and metric name (deprecated)', value: 'resource'},
         {text: 'metric ID', value: 'metric'}
     ];
 

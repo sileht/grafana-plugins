@@ -97,7 +97,7 @@ var GnocchiDatasource = (function () {
             var transform;
             try {
                 metric_regex = self.templateSrv.replace(target.metric_name, options.scopedVars);
-                resource_search = self.templateSrv.replace(target.resource_search, options.scopedVars);
+                resource_search = self.templateSrv.replace(target.resource_search, options.scopedVars, self.formatQueryTemplate);
                 resource_type = self.templateSrv.replace(target.resource_type, options.scopedVars);
                 resource_id = self.templateSrv.replace(target.resource_id, options.scopedVars);
                 metric_id = self.templateSrv.replace(target.metric_id, options.scopedVars);
@@ -268,14 +268,14 @@ var GnocchiDatasource = (function () {
             try {
                 req.url = self.templateSrv.replace('v1/search/resource/' + resourceQuery[1]);
                 resource_search = self.templateSrv.replace(resourceQuery[3]);
-                if (resource_search.trim()[0] === '{') {
+                if (this.isJsonQuery(resource_search)) {
                     angular.toJson(angular.fromJson(resource_search));
                 }
             }
             catch (err) {
                 return self.$q.reject(err);
             }
-            if (resource_search.trim()[0] === '{') {
+            if (this.isJsonQuery(resource_search)) {
                 req.data = resource_search;
             }
             else {
@@ -334,7 +334,7 @@ var GnocchiDatasource = (function () {
         var self = this;
         var resource_search_req;
         resource_type = resource_type || 'generic';
-        if (resource_search.trim()[0] === '{') {
+        if (this.isJsonQuery(resource_search)) {
             resource_search_req = {
                 url: 'v1/search/resource/' + resource_type,
                 method: 'POST',
@@ -359,6 +359,20 @@ var GnocchiDatasource = (function () {
     //////////////////////
     /// Utils
     //////////////////////
+    GnocchiDatasource.prototype.formatQueryTemplate = function (value, variable, formater) {
+        if (typeof value === 'string') {
+            return value;
+        }
+        else {
+            var values = _.map(value, function (v) {
+                return '"' + v.replace('"', '\"') + '"';
+            });
+            return "[" + values.join(", ") + "]";
+        }
+    };
+    GnocchiDatasource.prototype.isJsonQuery = function (query) {
+        return query.trim()[0] === '{';
+    };
     GnocchiDatasource.prototype.validateTarget = function (target, syntax_only) {
         // FIXME(sileht): When syntax_only is false, we should do template interpolation
         var self = this;
@@ -382,7 +396,7 @@ var GnocchiDatasource = (function () {
                 if (!target.resource_search) {
                     mandatory.push("Query");
                 }
-                else if (target.resource_search.trim()[0] === '{') {
+                else if (this.isJsonQuery(target.resource_search)) {
                     try {
                         angular.toJson(angular.fromJson(target.resource_search));
                     }

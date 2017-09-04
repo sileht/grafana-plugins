@@ -48,16 +48,7 @@ The editor have 4 modes to retreives metrics, you can change the mode by clickin
 
   Metric ID: the id of the metric you are interrested in
 
-* Measurements of a metric of a resource:
-  Create one graph with datapoint of the metric of the defined resource.
-
-  ![](https://raw.githubusercontent.com/gnocchixyz/grafana-gnocchi-datasource/master/docs/gnocchi_query_mode2.png)
-
-  Resource ID: the id of the resource
-  Resource type: the type of the resource (generic, instance, disk, ...)
-  Metric name: the name of the metric
-
-* Measurements of a metric of multiple resources:
+* Measurements of metrics of resources:
   Create one graph per metric find with the query.
 
   ![](https://raw.githubusercontent.com/gnocchixyz/grafana-gnocchi-datasource/master/docs/gnocchi_query_mode3.png)

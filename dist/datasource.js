@@ -81,12 +81,6 @@ var GnocchiDatasource = (function () {
                 default_measures_req.params.end = options.range.to.toISOString();
                 default_measures_req.params.stop = options.range.to.toISOString();
             }
-            var error = self.validateTarget(target, true);
-            if (error) {
-                // no need to self.$q.reject() here, error is already printed by the queryCtrl
-                // console.log("target is not yet valid: " + error);
-                return self.$q.when([]);
-            }
             var resource_type = target.resource_type;
             var metric_regex;
             var resource_search;
@@ -96,6 +90,7 @@ var GnocchiDatasource = (function () {
             var granularity;
             var transform;
             try {
+                self.checkMandatoryFields(target);
                 metric_regex = self.templateSrv.replace(target.metric_name, options.scopedVars, 'regex');
                 resource_search = self.templateSrv.replace(target.resource_search, options.scopedVars, self.formatQueryTemplate);
                 resource_id = self.templateSrv.replace(target.resource_id, options.scopedVars, self.formatUnsupportedMultiValue("Resource ID"));
@@ -103,11 +98,19 @@ var GnocchiDatasource = (function () {
                 user_label = self.templateSrv.replace(target.label, options.scopedVars, self.formatLabelTemplate);
                 granularity = self.templateSrv.replace(target.granularity, options.scopedVars, self.formatUnsupportedMultiValue("Granularity"));
                 transform = self.templateSrv.replace(target.transform, options.scopedVars, self.formatUnsupportedMultiValue("Transformation"));
+                if ((target.queryMode === "resource_search" || target.queryMode === "resource_aggregation")
+                    && self.isJsonQuery(resource_search)) {
+                    try {
+                        angular.toJson(angular.fromJson(resource_search));
+                    }
+                    catch (err) {
+                        throw { message: "Query JSON is malformed: " + err };
+                    }
+                }
             }
             catch (err) {
                 return self.$q.reject(err);
             }
-            resource_type = resource_type || "generic";
             if (granularity) {
                 default_measures_req.params.granularity = granularity;
             }
@@ -332,7 +335,6 @@ var GnocchiDatasource = (function () {
     GnocchiDatasource.prototype.buildQueryRequest = function (resource_type, resource_search) {
         var self = this;
         var resource_search_req;
-        resource_type = resource_type || 'generic';
         if (this.isJsonQuery(resource_search)) {
             resource_search_req = {
                 url: 'v1/search/resource/' + resource_type,
@@ -351,10 +353,6 @@ var GnocchiDatasource = (function () {
         }
         return resource_search_req;
     };
-    GnocchiDatasource.prototype.validateSearchTarget = function (target) {
-        var self = this;
-        return self._gnocchi_request(self.buildQueryRequest(target.resource_type, target.resource_search));
-    };
     //////////////////////
     /// Utils
     //////////////////////
@@ -365,7 +363,7 @@ var GnocchiDatasource = (function () {
                 return value;
             }
             else if (value.length > 1) {
-                throw "Templating multi value in '" + field + "' is unsupported";
+                throw { message: "Templating multi value in '" + field + "' is unsupported" };
             }
             else {
                 return value[0];
@@ -394,8 +392,7 @@ var GnocchiDatasource = (function () {
     GnocchiDatasource.prototype.isJsonQuery = function (query) {
         return query.trim()[0] === '{';
     };
-    GnocchiDatasource.prototype.validateTarget = function (target, syntax_only) {
-        // FIXME(sileht): When syntax_only is false, we should do template interpolation
+    GnocchiDatasource.prototype.checkMandatoryFields = function (target) {
         var self = this;
         var mandatory = [];
         switch (target.queryMode) {
@@ -417,41 +414,16 @@ var GnocchiDatasource = (function () {
                 if (!target.resource_search) {
                     mandatory.push("Query");
                 }
-                else if (this.isJsonQuery(target.resource_search)) {
-                    try {
-                        angular.toJson(angular.fromJson(target.resource_search));
-                    }
-                    catch (err) {
-                        mandatory.push("Query");
-                    }
-                }
                 if (!target.metric_name) {
-                    mandatory.push("Metric name");
+                    mandatory.push("Metric regex");
                 }
                 break;
             default:
                 break;
         }
-        if (mandatory.length > 0) {
-            return "Missing or invalid fields: " + mandatory.join(", ");
+        if (mandatory.length >= 1) {
+            throw { message: mandatory.join(", ") + " must be filled" };
         }
-        else if (syntax_only) {
-            return;
-        }
-        switch (target.queryMode) {
-            case "resource_aggregation":
-            case "resource_search":
-                self.validateSearchTarget(target).then(undefined, function (result) {
-                    if (result) {
-                        return result.message;
-                    }
-                    else {
-                        return "Unexpected error";
-                    }
-                });
-                return;
-        }
-        return;
     };
     GnocchiDatasource.prototype.sanitize_url = function (url) {
         if (url[url.length - 1] !== '/') {
@@ -513,20 +485,15 @@ var GnocchiDatasource = (function () {
                         deferred.reject({ 'message': "Gnocchi authentication failure" });
                     }
                 }
-                else if (reason.status === 404 && reason.data !== undefined && reason.data.message !== undefined) {
-                    reason.message = "Metric not found: " + reason.data.message.replace(/<[^>]+>/gm, ''); // Strip html tag
-                    deferred.reject(reason);
+                else if (reason.data !== undefined && reason.data.message !== undefined) {
+                    if (reason.status >= 300 && reason.status < 500) {
+                        // Remove pecan generic message, replace <br> by \n, strip other html tag
+                        reason.data.message = reason.data.message.replace(/[^<]*<br \/><br \/>/gm, '');
+                        reason.data.message = reason.data.message.replace('<br />', '\n').replace(/<[^>]+>/gm, '').trim();
+                        deferred.reject(reason);
+                    }
                 }
-                else if (reason.status === 400 && reason.data !== undefined && reason.data.message !== undefined) {
-                    reason.message = "Malformed query: " + reason.data.message.replace(/<[^>]+>/gm, ''); // Strip html tag
-                    deferred.reject(reason);
-                }
-                else if (reason.status >= 300 && reason.data !== undefined && reason.data.message !== undefined) {
-                    reason.message = 'Gnocchi error: ' + reason.data.message.replace(/<[^>]+>/gm, ''); // Strip html tag
-                    deferred.reject(reason);
-                }
-                else if (reason.status) {
-                    reason.message = 'Gnocchi error: ' + reason;
+                else {
                     deferred.reject(reason);
                 }
             });

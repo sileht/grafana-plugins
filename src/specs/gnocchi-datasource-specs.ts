@@ -727,34 +727,20 @@ describe('GnocchiDatasource', function() {
   });
 
 
-  describe('validate query success', function() {
-    it('no target error', function() {
-      var target = {'resource_search': '{"=": {"id": "foobar"}}',
-                    'queryMode': 'resource_search', 'metric_name': 'cpu_util'};
-      $httpBackend.expect('POST', "/v1/search/resource/generic").respond([]);
-      var error = ds.validateTarget(target, false);
-      expect(error).to.be(undefined);
-      $httpBackend.flush();
-    });
-  });
-
   describe('validate query missing field', function() {
     it('resource', function() {
       var target = {'resource_id': '', 'queryMode': 'resource', 'metric_name': ''};
-      var error = ds.validateTarget(target, false);
-      expect(error).to.be("Missing or invalid fields: Resource ID, Metric regex");
+      expect(function() {ds.checkMandatoryFields(target);}).to.throwException(/Resource ID, Metric regex must be filled/);
     });
 
     it('metric', function() {
       var target = {'metric_id': '', 'queryMode': 'metric'};
-      var error = ds.validateTarget(target, false);
-      expect(error).to.be("Missing or invalid fields: Metric ID");
+      expect(function() {ds.checkMandatoryFields(target);}).to.throwException(/Metric ID must be filled/);
     });
 
     it('resource_search', function() {
       var target = {'resource_search': '', 'queryMode': 'resource_search', 'metric_name': ''};
-      var error = ds.validateTarget(target, false);
-      expect(error).to.be("Missing or invalid fields: Query, Metric name");
+      expect(function() {ds.checkMandatoryFields(target);}).to.throwException(/Query, Metric regex must be filled/);
     });
   });
 

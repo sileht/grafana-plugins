@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 var _ = require("lodash");
+var angular = require("angular");
 var GnocchiDatasourceQueryCtrl = (function () {
     function GnocchiDatasourceQueryCtrl($scope, $injector) {
         var _this = this;
@@ -21,6 +22,9 @@ var GnocchiDatasourceQueryCtrl = (function () {
         if (!this.target.aggregator) {
             this.target.aggregator = 'mean';
         }
+        if (!this.target.resource_type) {
+            this.target.resource_type = 'generic';
+        }
         if (this.target.draw_missing_datapoint_as_zero === undefined) {
             this.target.draw_missing_datapoint_as_zero = true;
         }
@@ -30,8 +34,6 @@ var GnocchiDatasourceQueryCtrl = (function () {
         if (!this.target.needed_overlap) {
             this.target.needed_overlap = 0;
         }
-        this.target.validQuery = false;
-        this.target.queryError = 'No query';
         this.suggestResourceIDs = function (query, callback) {
             _this.datasource.performSuggestQuery(query, 'resources', _this.target).then(callback);
         };
@@ -41,7 +43,7 @@ var GnocchiDatasourceQueryCtrl = (function () {
         this.suggestMetricNames = function (query, callback) {
             _this.datasource.performSuggestQuery(query, 'metric_names', _this.target).then(callback);
         };
-        this.queryUpdated();
+        this.refresh();
     }
     GnocchiDatasourceQueryCtrl.prototype.getAggregators = function () {
         return _.map(['mean', 'sum', 'min', 'max',
@@ -54,15 +56,13 @@ var GnocchiDatasourceQueryCtrl = (function () {
         if (option !== undefined) {
             this.target.aggregator = option.value;
         }
-        this.queryUpdated();
+        this.refresh();
     };
     GnocchiDatasourceQueryCtrl.prototype.refresh = function () {
-        this.panelCtrl.refresh();
-    };
-    GnocchiDatasourceQueryCtrl.prototype.queryUpdated = function () {
-        this.target.queryError = this.datasource.validateTarget(this.target, false);
-        this.target.validQuery = !this.target.queryError;
-        this.refresh();
+        if (!_.isEqual(this.oldTarget, this.target)) {
+            this.oldTarget = angular.copy(this.target);
+            this.panelCtrl.refresh();
+        }
     };
     // QueryCTRL stuffs
     GnocchiDatasourceQueryCtrl.prototype.getNextQueryLetter = function () {

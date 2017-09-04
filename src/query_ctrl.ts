@@ -1,11 +1,13 @@
 
 import * as _ from "lodash";
+import * as angular from "angular";
 
 export class GnocchiDatasourceQueryCtrl {
   static templateUrl = 'partials/query.editor.html';
 
   // This is a copy of QueryCtrl interface
   target: any;
+  oldTarget: any;
   datasource: any;
   panelCtrl: any;
   panel: any;
@@ -39,6 +41,10 @@ export class GnocchiDatasourceQueryCtrl {
         this.target.aggregator = 'mean';
     }
 
+    if (!this.target.resource_type) {
+        this.target.resource_type = 'generic';
+    }
+
     if (this.target.draw_missing_datapoint_as_zero === undefined) {
         this.target.draw_missing_datapoint_as_zero = true;
     }
@@ -48,9 +54,6 @@ export class GnocchiDatasourceQueryCtrl {
     if (!this.target.needed_overlap) {
         this.target.needed_overlap = 0;
     }
-
-    this.target.validQuery = false;
-    this.target.queryError = 'No query';
 
     this.suggestResourceIDs = (query, callback) => {
       this.datasource.performSuggestQuery(query, 'resources', this.target).then(callback);
@@ -63,7 +66,7 @@ export class GnocchiDatasourceQueryCtrl {
       this.datasource.performSuggestQuery(query, 'metric_names', this.target).then(callback);
     };
 
-    this.queryUpdated();
+    this.refresh();
   }
 
 
@@ -82,17 +85,14 @@ export class GnocchiDatasourceQueryCtrl {
       if (option !== undefined) {
         this.target.aggregator = option.value;
       }
-      this.queryUpdated();
+      this.refresh();
   }
 
   refresh(){
-    this.panelCtrl.refresh();
-  }
-
-  queryUpdated() {
-    this.target.queryError = this.datasource.validateTarget(this.target, false);
-    this.target.validQuery = !this.target.queryError;
-    this.refresh();
+    if (!_.isEqual(this.oldTarget, this.target)) {
+      this.oldTarget = angular.copy(this.target);
+      this.panelCtrl.refresh();
+    }
   }
 
   // QueryCTRL stuffs

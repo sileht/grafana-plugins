@@ -3,48 +3,41 @@
         <div class="gf-form">
             <label class="gf-form-label query-keyword width-8">QUERY TYPE</label>
             <div class="gf-form-select-wrapper">
-                <select class="gf-form-input gf-size-auto" ng-model="ctrl.target.queryMode" ng-options="f.value as f.text for f in ctrl.queryModes" ng-change="ctrl.queryUpdated()"></select>
+                <select class="gf-form-input gf-size-auto" ng-model="ctrl.target.queryMode" ng-options="f.value as f.text for f in ctrl.queryModes" ng-change="ctrl.refresh()"></select>
             </div>
-        </div>
-        <div class="gf-form">
-            <label class="gf-form-label">
-                    <i ng-if="ctrl.target.validQuery" class="fa fa-check"></i>
-                    <i ng-if="!ctrl.target.validQuery" class="fa fa-exclamation"></i>&nbsp;&nbsp;
-                    <span class="text-error" ng-if="!ctrl.target.validQuery"> {{ctrl.target.queryError}} </span>
-            </label>
         </div>
     </div>
     <div class="gf-form-inline">
         <div class="gf-form max-width" ng-if="['resource', 'resource_search', 'resource_aggregation'].indexOf(ctrl.target.queryMode) >= 0">
             <label class="gf-form-label query-keyword width-8">Resource type</label>
-            <input type="text" class="gf-form-input width-12" ng-model="ctrl.target.resource_type" spellcheck='false' placeholder="generic" data-min-length=0 ng-model-onblur ng-blur="ctrl.queryUpdated()">
+            <input type="text" class="gf-form-input width-12" ng-model="ctrl.target.resource_type" spellcheck='false' placeholder="generic" data-min-length=0 ng-model-onblur ng-blur="ctrl.refresh()">
             <label class="gf-form-label query-keyword width-8" ng-if="['resource_search'].indexOf(ctrl.target.queryMode) >= 0">Metric regex</label>
             <label class="gf-form-label query-keyword width-8" ng-if="['resource_search'].indexOf(ctrl.target.queryMode) < 0">Metric name</label>
-            <input type="text" class="gf-form-input" ng-model="ctrl.target.metric_name" bs-typeahead="ctrl.suggestMetricNames" spellcheck='false' placeholder="metric" data-min-length=0 ng-model-onblur ng-blur="ctrl.queryUpdated()">
+            <input type="text" class="gf-form-input" ng-model="ctrl.target.metric_name" bs-typeahead="ctrl.suggestMetricNames" spellcheck='false' placeholder="metric" data-min-length=0 ng-model-onblur ng-blur="ctrl.refresh()">
         </div>
     </div>
     <div ng-if="['resource_search', 'resource_aggregation'].indexOf(ctrl.target.queryMode) >= 0" class="gf-form-inline">
         <div class="gf-form max-width">
             <label class="gf-form-label query-keyword width-8">Query</label>
-            <input type="text" class="gf-form-input" ng-model="ctrl.target.resource_search" spellcheck='false' placeholder="attribute1='value' and attribute2 like '%contain%'" data-min-length=0 ng-model-onblur ng-blur="ctrl.queryUpdated()" >
+            <input type="text" class="gf-form-input" ng-model="ctrl.target.resource_search" spellcheck='false' placeholder="attribute1='value' and attribute2 like '%contain%'" data-min-length=0 ng-model-onblur ng-blur="ctrl.refresh()" >
         </div>
     </div>
     <div class="gf-form-inline">
         <div class="gf-form max-width-30" ng-if="['resource'].indexOf(ctrl.target.queryMode) >= 0">
             <label class="gf-form-label query-keyword width-8">Resource ID</label>
-            <input type="text" class="gf-form-input" ng-model="ctrl.target.resource_id" bs-typeahead="ctrl.suggestResourceIDs" spellcheck='false' placeholder="resource id" data-min-length=0 ng-model-onblur ng-blur="ctrl.queryUpdated()">
+            <input type="text" class="gf-form-input" ng-model="ctrl.target.resource_id" bs-typeahead="ctrl.suggestResourceIDs" spellcheck='false' placeholder="resource id" data-min-length=0 ng-model-onblur ng-blur="ctrl.refresh()">
         </div>
         <div class="gf-form max-width-30" ng-if="['metric'].indexOf(ctrl.target.queryMode) >= 0">
             <label class="gf-form-label query-keyword width-8">Metric ID</label>
-            <input type="text" class="gf-form-input" ng-model="ctrl.target.metric_id" bs-typeahead="ctrl.suggestMetricIDs" spellcheck='false' placeholder="metric id" data-min-length=0 ng-model-onblur ng-blur="ctrl.queryUpdated()">
+            <input type="text" class="gf-form-input" ng-model="ctrl.target.metric_id" bs-typeahead="ctrl.suggestMetricIDs" spellcheck='false' placeholder="metric id" data-min-length=0 ng-model-onblur ng-blur="ctrl.refresh()">
         </div>
         <div class="gf-form max-width-20">
             <label class="gf-form-label query-keyword width-8">Label</label>
-            <input type="text" class="gf-form-input" ng-model="ctrl.target.label" spellcheck='false' placeholder="$id" data-min-length=0 ng-model-onblur ng-blur="ctrl.queryUpdated()">
+            <input type="text" class="gf-form-input" ng-model="ctrl.target.label" spellcheck='false' placeholder="$id" data-min-length=0 ng-model-onblur ng-blur="ctrl.refresh()">
         </div>
         <div class="gf-form max-width-20">
             <label class="gf-form-label query-keyword width-8">Granularity</label>
-            <input type="text" class="gf-form-input" ng-model="ctrl.target.granularity" spellcheck='false' placeholder="seconds" data-min-length=0 ng-model-onblur ng-blur="ctrl.queryUpdated()">
+            <input type="text" class="gf-form-input" ng-model="ctrl.target.granularity" spellcheck='false' placeholder="seconds" data-min-length=0 ng-model-onblur ng-blur="ctrl.refresh()">
         </div>
         <div class="gf-form">
             <label class="gf-form-label query-keyword width-8">Aggregator</label>
@@ -52,18 +45,18 @@
         </div>
         <div class="gf-form max-width-20" ng-if="['resource_aggregation'].indexOf(ctrl.target.queryMode) >= 0" >
             <label class="gf-form-label query-keyword width-16">Percent of needed overlap</label>
-            <input type="text" class="gf-form-input" ng-model="ctrl.target.need_overlap" spellcheck='false' placeholder="0" data-min-length=0 ng-model-onblur ng-blur="ctrl.queryUpdated()">
+            <input type="text" class="gf-form-input" ng-model="ctrl.target.need_overlap" spellcheck='false' placeholder="0" data-min-length=0 ng-model-onblur ng-blur="ctrl.refresh()">
         </div>
         <div class="gf-form max-width-20">
             <label class="gf-form-label query-keyword width-16">Missing datapoints as zero</label>
-            <gf-form-switch class="gf-form" label-class="width-5" checked="ctrl.target.draw_missing_datapoint_as_zero" on-change="ctrl.queryUpdated()"></gf-form-switch>
+            <gf-form-switch class="gf-form" label-class="width-5" checked="ctrl.target.draw_missing_datapoint_as_zero" on-change="ctrl.refresh()"></gf-form-switch>
         </div>
 
     </div>
     <div class="gf-form-inline">
         <div class="gf-form max-width">
             <label class="gf-form-label query-keyword width-8">Transformation</label>
-            <input type="text" class="gf-form-input" ng-model="ctrl.target.transform" spellcheck='false' placeholder="example: absolute:resample(60):reverse" data-min-length=0 ng-model-onblur ng-blur="ctrl.queryUpdated()" >
+            <input type="text" class="gf-form-input" ng-model="ctrl.target.transform" spellcheck='false' placeholder="example: absolute:resample(60):reverse" data-min-length=0 ng-model-onblur ng-blur="ctrl.refresh()" >
         </div>
     </div>
 

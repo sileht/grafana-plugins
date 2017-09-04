@@ -1,7 +1,8 @@
 Version 1.5.0
 
-* Behavior of missing datapoints is configurable (shown as zero or not)
+* Behavior of missing datapoints is now configurable (shown as zero or not)
 * Add support for Gnocchi transformation
+* Custom aggregation method are allowed
 
 Version 1.4.0
 

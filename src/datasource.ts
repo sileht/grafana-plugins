@@ -119,7 +119,7 @@ export default class GnocchiDatasource {
 
         try {
           metric_regex = self.templateSrv.replace(target.metric_name, options.scopedVars);
-          resource_search = self.templateSrv.replace(target.resource_search, options.scopedVars);
+          resource_search = self.templateSrv.replace(target.resource_search, options.scopedVars, self.formatQueryTemplate);
           resource_type = self.templateSrv.replace(target.resource_type, options.scopedVars);
           resource_id = self.templateSrv.replace(target.resource_id, options.scopedVars);
           metric_id = self.templateSrv.replace(target.metric_id, options.scopedVars);
@@ -297,7 +297,7 @@ export default class GnocchiDatasource {
         try {
           req.url = self.templateSrv.replace('v1/search/resource/' + resourceQuery[1]);
           resource_search = self.templateSrv.replace(resourceQuery[3]);
-          if (resource_search.trim()[0] === '{') {
+          if (this.isJsonQuery(resource_search)) {
             angular.toJson(angular.fromJson(resource_search));
           }
         } catch (err) {
@@ -305,7 +305,7 @@ export default class GnocchiDatasource {
         }
 
 
-        if (resource_search.trim()[0] === '{') {
+        if (this.isJsonQuery(resource_search)) {
           req.data = resource_search;
         } else {
           req.params.filter = resource_search;
@@ -368,7 +368,7 @@ export default class GnocchiDatasource {
 
       resource_type = resource_type || 'generic';
 
-      if (resource_search.trim()[0] === '{') {
+      if (this.isJsonQuery(resource_search)) {
         resource_search_req = {
           url: 'v1/search/resource/' + resource_type,
           method: 'POST',
@@ -396,6 +396,21 @@ export default class GnocchiDatasource {
     /// Utils
     //////////////////////
 
+    formatQueryTemplate(value, variable, formater) {
+      if (typeof value === 'string') {
+        return value;
+      } else {
+        var values = _.map(value, function(v: string) {
+            return '"' + v.replace('"', '\"') + '"';
+        });
+        return "[" + values.join(", ") + "]";
+      }
+    }
+
+    isJsonQuery(query) {
+        return query.trim()[0] === '{';
+    }
+
     validateTarget(target, syntax_only) {
       // FIXME(sileht): When syntax_only is false, we should do template interpolation
 
@@ -419,7 +434,7 @@ export default class GnocchiDatasource {
         case "resource_search":
           if (!target.resource_search) {
             mandatory.push("Query");
-          } else if (target.resource_search.trim()[0] === '{') {
+          } else if (this.isJsonQuery(target.resource_search)) {
             try {
               angular.toJson(angular.fromJson(target.resource_search));
             } catch (err) {

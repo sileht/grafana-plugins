@@ -21,8 +21,8 @@
         "large": "docs/gnocchi-logo.png"
     },
     "links": [
-      {"name": "GitHub", "url": "https://github.com/gnocchixyz/grafana-datasource-gnocchi"},
       {"name": "Gnocchi", "url": "http://gnocchi.xyz"},
+      {"name": "GitHub", "url": "https://github.com/gnocchixyz/grafana-gnocchi-datasource"},
       {"name": "Apache 2.0", "url": "http://www.apache.org/licenses/LICENSE-2.0"}
     ],
     "screenshots": [

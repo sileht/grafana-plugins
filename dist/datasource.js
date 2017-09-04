@@ -87,23 +87,22 @@ var GnocchiDatasource = (function () {
                 // console.log("target is not yet valid: " + error);
                 return self.$q.when([]);
             }
+            var resource_type = target.resource_type;
             var metric_regex;
             var resource_search;
-            var resource_type;
             var resource_id;
             var metric_id;
             var user_label;
             var granularity;
             var transform;
             try {
-                metric_regex = self.templateSrv.replace(target.metric_name, options.scopedVars);
+                metric_regex = self.templateSrv.replace(target.metric_name, options.scopedVars, 'regex');
                 resource_search = self.templateSrv.replace(target.resource_search, options.scopedVars, self.formatQueryTemplate);
-                resource_type = self.templateSrv.replace(target.resource_type, options.scopedVars);
-                resource_id = self.templateSrv.replace(target.resource_id, options.scopedVars);
-                metric_id = self.templateSrv.replace(target.metric_id, options.scopedVars);
-                user_label = self.templateSrv.replace(target.label, options.scopedVars);
-                granularity = self.templateSrv.replace(target.granularity, options.scopedVars);
-                transform = self.templateSrv.replace(target.transform, options.scopedVars);
+                resource_id = self.templateSrv.replace(target.resource_id, options.scopedVars, self.formatUnsupportedMultiValue("Resource ID"));
+                metric_id = self.templateSrv.replace(target.metric_id, options.scopedVars, self.formatUnsupportedMultiValue("Metric ID"));
+                user_label = self.templateSrv.replace(target.label, options.scopedVars, self.formatLabelTemplate);
+                granularity = self.templateSrv.replace(target.granularity, options.scopedVars, self.formatUnsupportedMultiValue("Granularity"));
+                transform = self.templateSrv.replace(target.transform, options.scopedVars, self.formatUnsupportedMultiValue("Transformation"));
             }
             catch (err) {
                 return self.$q.reject(err);
@@ -359,6 +358,28 @@ var GnocchiDatasource = (function () {
     //////////////////////
     /// Utils
     //////////////////////
+    GnocchiDatasource.prototype.formatUnsupportedMultiValue = function (field) {
+        var self = this;
+        return function (value, variable, formater) {
+            if (typeof value === 'string') {
+                return value;
+            }
+            else if (value.length > 1) {
+                throw "Templating multi value in '" + field + "' is unsupported";
+            }
+            else {
+                return value[0];
+            }
+        };
+    };
+    GnocchiDatasource.prototype.formatLabelTemplate = function (value, variable, formater) {
+        if (typeof value === 'string') {
+            return value;
+        }
+        else {
+            return value[0];
+        }
+    };
     GnocchiDatasource.prototype.formatQueryTemplate = function (value, variable, formater) {
         if (typeof value === 'string') {
             return value;

@@ -302,7 +302,7 @@ export default class GnocchiDatasource {
 
         try {
           req.url = self.templateSrv.replace('v1/search/resource/' + resourceQuery[1]);
-          resource_search = self.templateSrv.replace(resourceQuery[3]);
+          resource_search = self.templateSrv.replace(resourceQuery[3], {}, self.formatQueryTemplate);
           if (this.isJsonQuery(resource_search)) {
             angular.toJson(angular.fromJson(resource_search));
           }

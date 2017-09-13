@@ -43,7 +43,11 @@
             <label class="gf-form-label query-keyword width-8">Aggregator</label>
             <gf-form-dropdown css-class="width-12" allow-custom="true" model="ctrl.target.aggregator" get-options="ctrl.getAggregators()" on-change="ctrl.setAggregator($option)"></gf-form-dropdown>
         </div>
-        <div class="gf-form max-width-20" ng-if="['resource_aggregation'].indexOf(ctrl.target.queryMode) >= 0" >
+        <div class="gf-form" ng-if="['resource_aggregation'].indexOf(ctrl.target.queryMode) >= 0">
+            <label class="gf-form-label query-keyword width-8">Reaggregator</label>
+            <gf-form-dropdown css-class="width-12" allow-custom="true" model="ctrl.target.aggregator" get-options="ctrl.getAggregators()" on-change="ctrl.setReaggregator($option)"></gf-form-dropdown>
+        </div>
+        <div class="gf-form max-width-20" ng-if="['resource_aggregation'].indexOf(ctrl.target.queryMode) >= 0">
             <label class="gf-form-label query-keyword width-16">Percent of needed overlap</label>
             <input type="text" class="gf-form-input" ng-model="ctrl.target.needed_overlap" spellcheck='false' placeholder="0" data-min-length=0 ng-model-onblur ng-keyup="cancel($event)" ng-change="ctrl.refresh()">
         </div>

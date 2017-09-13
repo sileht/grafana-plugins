@@ -88,6 +88,13 @@ export class GnocchiDatasourceQueryCtrl {
       this.refresh();
   }
 
+  setReaggregator(option) {
+      if (option !== undefined) {
+        this.target.reaggregator = option.value;
+      }
+      this.refresh();
+  }
+
   refresh(){
     if (!_.isEqual(this.oldTarget, this.target)) {
       this.oldTarget = angular.copy(this.target);

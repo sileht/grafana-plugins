@@ -58,6 +58,12 @@ var GnocchiDatasourceQueryCtrl = (function () {
         }
         this.refresh();
     };
+    GnocchiDatasourceQueryCtrl.prototype.setReaggregator = function (option) {
+        if (option !== undefined) {
+            this.target.reaggregator = option.value;
+        }
+        this.refresh();
+    };
     GnocchiDatasourceQueryCtrl.prototype.refresh = function () {
         if (!_.isEqual(this.oldTarget, this.target)) {
             this.oldTarget = angular.copy(this.target);

@@ -66,6 +66,7 @@ var GnocchiDatasource = (function () {
                 method: null,
                 params: {
                     'aggregation': target.aggregator,
+                    'reaggregation': target.reaggregator,
                     'start': options.range.from.toISOString(),
                     'end': null,
                     'stop': null,

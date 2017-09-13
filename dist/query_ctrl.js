@@ -31,8 +31,8 @@ var GnocchiDatasourceQueryCtrl = (function () {
         if (!this.target.queryMode) {
             this.target.queryMode = "resource_search";
         }
-        if (!this.target.need_overlap) {
-            this.target.need_overlap = 0;
+        if (!this.target.needed_overlap) {
+            this.target.needed_overlap = 0;
         }
         this.suggestResourceIDs = function (query, callback) {
             _this.datasource.performSuggestQuery(query, 'resources', _this.target).then(callback);

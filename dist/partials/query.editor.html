@@ -45,7 +45,7 @@
         </div>
         <div class="gf-form max-width-20" ng-if="['resource_aggregation'].indexOf(ctrl.target.queryMode) >= 0" >
             <label class="gf-form-label query-keyword width-16">Percent of needed overlap</label>
-            <input type="text" class="gf-form-input" ng-model="ctrl.target.need_overlap" spellcheck='false' placeholder="0" data-min-length=0 ng-model-onblur ng-keyup="cancel($event)" ng-change="ctrl.refresh()">
+            <input type="text" class="gf-form-input" ng-model="ctrl.target.needed_overlap" spellcheck='false' placeholder="0" data-min-length=0 ng-model-onblur ng-keyup="cancel($event)" ng-change="ctrl.refresh()">
         </div>
         <div class="gf-form max-width-20">
             <label class="gf-form-label query-keyword width-16">Missing datapoints as zero</label>

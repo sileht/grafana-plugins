@@ -66,6 +66,7 @@ var GnocchiDatasource = (function () {
                 method: null,
                 params: {
                     'aggregation': target.aggregator,
+                    'reaggregation': null,
                     'start': options.range.from.toISOString(),
                     'end': null,
                     'stop': null,
@@ -140,7 +141,8 @@ var GnocchiDatasource = (function () {
                         var measures_req = _.merge({}, default_measures_req);
                         measures_req.url = 'v1/aggregation/metric';
                         measures_req.params.metric = _.keysIn(metrics);
-                        measures_req.params.needed_overlap = target.needed_overlap;
+                        measures_req.params.reaggregation = target.reaggregator,
+                            measures_req.params.needed_overlap = target.needed_overlap;
                         return self._retrieve_measures(user_label || "unlabeled", measures_req, target.draw_missing_datapoint_as_zero);
                     }
                 });

@@ -70,8 +70,10 @@ git push --tags
 
 github-release release -u gnocchixyz -r grafana-gnocchi-datasource --tag $version --description "Release $version for Grafana 3 and 4"
 github-release upload  -u gnocchixyz -r grafana-gnocchi-datasource --tag $version --name gnocchixyz-gnocchi-datasource-${version}.tar.gz --file gnocchixyz-gnocchi-datasource-${version}.tar.gz
+github-release info    -u gnocchixyz -r grafana-gnocchi-datasource --tag $version
+
+rm -rf gnocchixyz-gnocchi-datasource*
 
 nextversion=$(inc_version $version)
 bump_version "$nextversion" "$today"
 
-rm -rf gnocchixyz-gnocchi-datasource*

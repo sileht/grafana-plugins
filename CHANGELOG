@@ -2,7 +2,7 @@ Version 1.5.4
 
 * fix multivalue templating variable in template
 * fix typo in needed_overlap
-* Implements reagregation
+* Implements reaggregation
 
 Version 1.5.3
 

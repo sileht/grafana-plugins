@@ -1,3 +1,7 @@
+Version 1.5.5
+
+* Fix some release script issues
+
 Version 1.5.4
 
 * fix multivalue templating variable in template

@@ -71,7 +71,6 @@ var GnocchiDatasource = (function () {
                     'end': null,
                     'stop': null,
                     'granularity': null,
-                    'transform': null,
                     'filter': null,
                     'needed_overlap': null,
                     'metric': null
@@ -89,7 +88,6 @@ var GnocchiDatasource = (function () {
             var metric_id;
             var user_label;
             var granularity;
-            var transform;
             try {
                 self.checkMandatoryFields(target);
                 metric_regex = self.templateSrv.replace(target.metric_name, options.scopedVars, 'regex');
@@ -98,7 +96,6 @@ var GnocchiDatasource = (function () {
                 metric_id = self.templateSrv.replace(target.metric_id, options.scopedVars, self.formatUnsupportedMultiValue("Metric ID"));
                 user_label = self.templateSrv.replace(target.label, options.scopedVars, self.formatLabelTemplate);
                 granularity = self.templateSrv.replace(target.granularity, options.scopedVars, self.formatUnsupportedMultiValue("Granularity"));
-                transform = self.templateSrv.replace(target.transform, options.scopedVars, self.formatUnsupportedMultiValue("Transformation"));
                 if ((target.queryMode === "resource_search" || target.queryMode === "resource_aggregation")
                     && self.isJsonQuery(resource_search)) {
                     try {
@@ -114,9 +111,6 @@ var GnocchiDatasource = (function () {
             }
             if (granularity) {
                 default_measures_req.params.granularity = granularity;
-            }
-            if (transform) {
-                default_measures_req.params.transform = transform;
             }
             if (target.queryMode === "resource_search" || target.queryMode === "resource_aggregation") {
                 var resource_search_req = self.buildQueryRequest(resource_type, resource_search);

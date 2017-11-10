@@ -10,6 +10,7 @@ var GnocchiDatasourceQueryCtrl = (function () {
         this.$scope = $scope;
         this.panel = this.panelCtrl.panel;
         this.queryModes = [
+            { text: 'dynamic aggregates', value: 'dynamic_aggregates' },
             { text: 'resource search', value: 'resource_search' },
             { text: 'resource search (aggregated measurements)', value: 'resource_aggregation' },
             { text: 'resource ID and metric name (deprecated)', value: 'resource' },
@@ -27,6 +28,10 @@ var GnocchiDatasourceQueryCtrl = (function () {
         }
         if (this.target.draw_missing_datapoint_as_zero === undefined) {
             this.target.draw_missing_datapoint_as_zero = true;
+        }
+        if (this.target.fill === undefined && this.target.draw_missing_datapoint_as_zero) {
+            // backward compat.
+            this.target.fill = 0;
         }
         if (!this.target.queryMode) {
             this.target.queryMode = "resource_search";

@@ -151,12 +151,10 @@ export default class GnocchiDatasource {
             });
 
             if (target.queryMode === "resource_search"){
-                return self.$q.all(_.map(metrics, function(label, id){
-                  var measures_req = _.merge({}, default_measures_req);
-                  measures_req.url = 'v1/metric/' + id + '/measures';
-                  return self._retrieve_measures(label, measures_req,
-                                                 target.draw_missing_datapoint_as_zero);
-                }));
+                var measures_req = _.merge({}, default_measures_req);
+                measures_req.params.metric = _.keysIn(metrics);
+                measures_req.url = 'v1/metrics/measures';
+                return self._retrieve_multiple_measures(metrics, measures_req, target.draw_missing_datapoint_as_zero);
             } else {
               var measures_req = _.merge({}, default_measures_req);
               measures_req.url = 'v1/aggregation/metric';
@@ -203,39 +201,55 @@ export default class GnocchiDatasource {
       });
     }
 
+    _prepare_timeseries(name, measures, draw_missing_datapoint_as_zero) {
+      var dps = [];
+      var last_granularity;
+      var last_timestamp;
+      var last_value;
+      // NOTE(sileht): sample are ordered by granularity, then timestamp.
+      _.each(_.toArray(measures).reverse(), function(metricData) {
+        var granularity = metricData[1];
+        var timestamp = moment(metricData[0], moment.ISO_8601);
+        var value = metricData[2];
+
+        if (last_timestamp !== undefined){
+          // We have a more precise granularity
+          if (timestamp.valueOf() >= last_timestamp.valueOf()){
+            return;
+          }
+          if (draw_missing_datapoint_as_zero) {
+            var c_timestamp = last_timestamp;
+            c_timestamp.subtract(last_granularity, "seconds");
+            while (timestamp.valueOf() < c_timestamp.valueOf()) {
+              dps.push([0, c_timestamp.valueOf()]);
+              c_timestamp.subtract(last_granularity, "seconds");
+            }
+          }
+        }
+        last_timestamp = timestamp;
+        last_granularity = granularity;
+        last_value = value;
+        dps.push([last_value, last_timestamp.valueOf()]);
+      });
+      return { target: name, datapoints: _.toArray(dps).reverse() };
+    }
+
     _retrieve_measures(name, reqs, draw_missing_datapoint_as_zero) {
       var self = this;
       return self._gnocchi_request(reqs).then(function(result) {
-        var dps = [];
-        var last_granularity;
-        var last_timestamp;
-        var last_value;
-        // NOTE(sileht): sample are ordered by granularity, then timestamp.
-        _.each(_.toArray(result).reverse(), function(metricData) {
-          var granularity = metricData[1];
-          var timestamp = moment(metricData[0], moment.ISO_8601);
-          var value = metricData[2];
+        return self._prepare_timeseries(name, result, draw_missing_datapoint_as_zero);
+      });
+    }
 
-          if (last_timestamp !== undefined){
-            // We have a more precise granularity
-            if (timestamp.valueOf() >= last_timestamp.valueOf()){
-              return;
-            }
-            if (draw_missing_datapoint_as_zero) {
-              var c_timestamp = last_timestamp;
-              c_timestamp.subtract(last_granularity, "seconds");
-              while (timestamp.valueOf() < c_timestamp.valueOf()) {
-                dps.push([0, c_timestamp.valueOf()]);
-                c_timestamp.subtract(last_granularity, "seconds");
-              }
-            }
-          }
-          last_timestamp = timestamp;
-          last_granularity = granularity;
-          last_value = value;
-          dps.push([last_value, last_timestamp.valueOf()]);
+    _retrieve_multiple_measures(labels, reqs, draw_missing_datapoint_as_zero) {
+      var self = this;
+      var timeseries = [];
+      return self._gnocchi_request(reqs).then(function(result) {
+        _.forOwn(result, function(metric_id, measures) {
+          timeseries.push(
+            self._prepare_timeseries(labels[metric_id], measures, draw_missing_datapoint_as_zero)
+          );
         });
-        return { target: name, datapoints: _.toArray(dps).reverse() };
       });
     }
 

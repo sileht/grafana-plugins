@@ -12,6 +12,7 @@ var GnocchiDatasource = (function () {
         self.type = 'gnocchi';
         self.name = instanceSettings.name;
         self.supportMetrics = true;
+        self.version = null;
         self.default_headers = {
             'Content-Type': 'application/json',
         };
@@ -204,6 +205,9 @@ var GnocchiDatasource = (function () {
             return { data: _.flattenDeep(results) };
         });
     };
+    //////////////////////
+    /// Measures helpers
+    //////////////////////
     GnocchiDatasource.prototype._retrieve_measures = function (label, reqs, draw_missing_datapoint_as_zero) {
         var self = this;
         return self._gnocchi_request(reqs).then(function (result) {
@@ -291,6 +295,9 @@ var GnocchiDatasource = (function () {
             return ((resource) ? resource["id"] : "no label");
         }
     };
+    /////////////////////////
+    /// Completion queries
+    /////////////////////////
     GnocchiDatasource.prototype.performSuggestQuery = function (query, type, target) {
         var self = this;
         var options = { url: null };
@@ -374,6 +381,9 @@ var GnocchiDatasource = (function () {
         }
         return self.$q.when([]);
     };
+    ////////////////////////////
+    /// Datasource validation
+    ////////////////////////////
     GnocchiDatasource.prototype.testDatasource = function () {
         var self = this;
         return self._gnocchi_request({ 'url': 'v1/resource' }).then(function () {
@@ -417,6 +427,54 @@ var GnocchiDatasource = (function () {
     //////////////////////
     /// Utils
     //////////////////////
+    GnocchiDatasource.prototype.requireVersion = function (version) {
+        var _this = this;
+        // this.version is a sum of 3 int where:
+        // major  * 1000000
+        // minor  * 1000
+        // fix    * 1
+        var deferred = this.$q.defer();
+        version = this.parseVersion(version);
+        if (this.version === null) {
+            this._gnocchi_request({ 'url': '' }).then(function (result) {
+                console.log("Gnocchi build: " + result.build);
+                if (result.build !== undefined) {
+                    _this.version = _this.parseVersion(result.build);
+                }
+                else {
+                    // Assume 3.1.0
+                    _this.version = 300010000;
+                }
+                if (_this.version >= version) {
+                    deferred.resolve();
+                }
+                else {
+                    deferred.reject();
+                }
+            });
+        }
+        else if (this.version >= version) {
+            deferred.resolve();
+        }
+        else {
+            deferred.reject();
+        }
+        return deferred.promise;
+    };
+    GnocchiDatasource.prototype.parseVersion = function (version) {
+        var v = version.split(".");
+        var major = parseInt(v[0]);
+        var minor = parseInt(v[1]);
+        var fix = parseInt(v[2]);
+        if (major !== null && minor !== null && fix !== null) {
+            return major * 1000000 + minor * 1000 + fix;
+        }
+        else {
+            // Assume 3.1.0
+            console.log("Gnocchi version unparsable: " + version);
+            return 300010000;
+        }
+    };
     GnocchiDatasource.prototype.formatUnsupportedMultiValue = function (field) {
         var self = this;
         return function (value, variable, formater) {

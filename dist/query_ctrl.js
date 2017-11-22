@@ -10,12 +10,14 @@ var GnocchiDatasourceQueryCtrl = (function () {
         this.$scope = $scope;
         this.panel = this.panelCtrl.panel;
         this.queryModes = [
-            { text: 'dynamic aggregates', value: 'dynamic_aggregates' },
             { text: 'resource search', value: 'resource_search' },
             { text: 'resource search (aggregated measurements)', value: 'resource_aggregation' },
             { text: 'resource ID and metric name (deprecated)', value: 'resource' },
             { text: 'metric ID', value: 'metric' }
         ];
+        this.datasource.requireVersion("4.1.1").then(function () {
+            _this.queryModes.slice(0, 0, { text: 'dynamic aggregates', value: 'dynamic_aggregates' });
+        });
         if (!this.target.refId) {
             this.target.refId = this.getNextQueryLetter();
         }

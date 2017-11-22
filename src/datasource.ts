@@ -5,6 +5,7 @@ import * as moment from "moment";
 export default class GnocchiDatasource {
     name: string;
     type: string;
+    version: number;
     supportMetrics: boolean;
     default_headers: any;
     withCredentials: boolean;
@@ -23,6 +24,7 @@ export default class GnocchiDatasource {
       self.type = 'gnocchi';
       self.name = instanceSettings.name;
       self.supportMetrics = true;
+      self.version = null;
 
       self.default_headers = {
         'Content-Type': 'application/json',
@@ -230,6 +232,10 @@ export default class GnocchiDatasource {
       });
     }
 
+    //////////////////////
+    /// Measures helpers
+    //////////////////////
+
     _retrieve_measures(label, reqs, draw_missing_datapoint_as_zero) {
       var self = this;
       return self._gnocchi_request(reqs).then(function(result) {
@@ -320,6 +326,10 @@ export default class GnocchiDatasource {
       }
     }
 
+    /////////////////////////
+    /// Completion queries
+    /////////////////////////
+
     performSuggestQuery(query, type, target) {
       var self = this;
       var options = {url: null};
@@ -407,6 +417,10 @@ export default class GnocchiDatasource {
       return self.$q.when([]);
     }
 
+    ////////////////////////////
+    /// Datasource validation
+    ////////////////////////////
+
     testDatasource() {
       var self = this;
       return self._gnocchi_request({'url': 'v1/resource'}).then(function () {
@@ -451,6 +465,50 @@ export default class GnocchiDatasource {
     //////////////////////
     /// Utils
     //////////////////////
+
+    requireVersion(version) {
+      // this.version is a sum of 3 int where:
+      // major  * 1000000
+      // minor  * 1000
+      // fix    * 1
+      var deferred = this.$q.defer();
+      version = this.parseVersion(version);
+      if (this.version === null) {
+        this._gnocchi_request({'url': ''}).then((result) => {
+          console.log("Gnocchi build: " + result.build);
+          if (result.build !== undefined){
+            this.version = this.parseVersion(result.build);
+          } else {
+            // Assume 3.1.0
+            this.version = 300010000;
+          }
+          if (this.version >= version) {
+            deferred.resolve();
+          } else {
+            deferred.reject();
+          }
+        });
+      } else if (this.version >= version) {
+         deferred.resolve();
+      } else {
+         deferred.reject();
+      }
+      return deferred.promise;
+    }
+
+    parseVersion(version) {
+        var v = version.split(".");
+        var major = parseInt(v[0]);
+        var minor = parseInt(v[1]);
+        var fix = parseInt(v[2]);
+        if (major !== null && minor !== null && fix !== null){
+          return major * 1000000 + minor * 1000 + fix;
+        } else {
+          // Assume 3.1.0
+          console.log("Gnocchi version unparsable: " + version);
+          return 300010000;
+        }
+    }
 
     formatUnsupportedMultiValue(field) {
       var self = this;

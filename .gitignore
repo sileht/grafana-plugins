@@ -25,4 +25,3 @@ build/Release
 node_modules
 src/.baseDir.ts
 .tscache
-package-lock.json

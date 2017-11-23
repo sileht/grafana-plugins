@@ -33,7 +33,7 @@ export class GnocchiDatasourceQueryCtrl {
     ];
 
     this.datasource.requireVersion("4.1.1").then(() => {
-        this.queryModes.slice(0, 0,
+        this.queryModes.splice(0, 0,
             {text: 'dynamic aggregates', value: 'dynamic_aggregates'}
         );
     });

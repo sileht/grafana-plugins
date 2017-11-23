@@ -16,7 +16,7 @@ var GnocchiDatasourceQueryCtrl = (function () {
             { text: 'metric ID', value: 'metric' }
         ];
         this.datasource.requireVersion("4.1.1").then(function () {
-            _this.queryModes.slice(0, 0, { text: 'dynamic aggregates', value: 'dynamic_aggregates' });
+            _this.queryModes.splice(0, 0, { text: 'dynamic aggregates', value: 'dynamic_aggregates' });
         });
         if (!this.target.refId) {
             this.target.refId = this.getNextQueryLetter();

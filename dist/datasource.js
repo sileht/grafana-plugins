@@ -8,56 +8,55 @@ var GnocchiDatasource = (function () {
         this.$q = $q;
         this.backendSrv = backendSrv;
         this.templateSrv = templateSrv;
-        var self = this;
-        self.type = 'gnocchi';
-        self.name = instanceSettings.name;
-        self.supportMetrics = true;
-        self.version = null;
-        self.default_headers = {
+        this.type = 'gnocchi';
+        this.name = instanceSettings.name;
+        this.supportMetrics = true;
+        this.version = null;
+        this.default_headers = {
             'Content-Type': 'application/json',
         };
-        self.keystone_endpoint = null;
-        self.url = self.sanitize_url(instanceSettings.url);
+        this.keystone_endpoint = null;
+        this.url = this.sanitize_url(instanceSettings.url);
         if (instanceSettings.jsonData) {
-            self.auth_mode = instanceSettings.jsonData.mode;
-            self.project = instanceSettings.jsonData.project;
-            self.username = instanceSettings.jsonData.username;
-            self.password = instanceSettings.jsonData.password;
-            self.roles = instanceSettings.jsonData.roles;
-            self.domain = instanceSettings.jsonData.domain;
-            if (self.domain === undefined || self.domain === "") {
-                self.domain = 'default';
+            this.auth_mode = instanceSettings.jsonData.mode;
+            this.project = instanceSettings.jsonData.project;
+            this.username = instanceSettings.jsonData.username;
+            this.password = instanceSettings.jsonData.password;
+            this.roles = instanceSettings.jsonData.roles;
+            this.domain = instanceSettings.jsonData.domain;
+            if (this.domain === undefined || this.domain === "") {
+                this.domain = 'default';
             }
         }
-        if (self.roles === undefined || self.roles === "") {
-            self.roles = 'admin';
+        if (this.roles === undefined || this.roles === "") {
+            this.roles = 'admin';
         }
         if (instanceSettings.basicAuth || instanceSettings.withCredentials) {
-            self.withCredentials = true;
+            this.withCredentials = true;
         }
         // If the URL starts with http, we are in direct mode
         if (instanceSettings.basicAuth) {
-            self.default_headers["Authorization"] = instanceSettings.basicAuth;
+            this.default_headers["Authorization"] = instanceSettings.basicAuth;
         }
-        else if (self.auth_mode === "token") {
-            self.default_headers['X-Auth-Token'] = instanceSettings.jsonData.token;
+        else if (this.auth_mode === "token") {
+            this.default_headers['X-Auth-Token'] = instanceSettings.jsonData.token;
         }
-        else if (self.auth_mode === "noauth") {
-            self.default_headers['X-Project-Id'] = self.project;
-            self.default_headers['X-User-Id'] = self.username;
-            self.default_headers['X-Domain-Id'] = self.domain;
-            self.default_headers['X-Roles'] = self.roles;
+        else if (this.auth_mode === "noauth") {
+            this.default_headers['X-Project-Id'] = this.project;
+            this.default_headers['X-User-Id'] = this.username;
+            this.default_headers['X-Domain-Id'] = this.domain;
+            this.default_headers['X-Roles'] = this.roles;
         }
-        else if (self.auth_mode === "keystone") {
-            self.url = null;
-            self.keystone_endpoint = self.sanitize_url(instanceSettings.url);
+        else if (this.auth_mode === "keystone") {
+            this.url = null;
+            this.keystone_endpoint = this.sanitize_url(instanceSettings.url);
         }
     }
     ////////////////
     // Plugins API
     ////////////////
     GnocchiDatasource.prototype.query = function (options) {
-        var self = this;
+        var _this = this;
         var targets = _.filter(options.targets, function (target) { return !target.hide; });
         var promises = _.map(targets, function (target) {
             // Ensure target is valid
@@ -93,16 +92,16 @@ var GnocchiDatasource = (function () {
             var granularity;
             var operations;
             try {
-                self.checkMandatoryFields(target);
-                metric_regex = self.templateSrv.replace(target.metric_name, options.scopedVars, 'regex');
-                resource_search = self.templateSrv.replace(target.resource_search, options.scopedVars, self.formatQueryTemplate);
-                operations = self.templateSrv.replace(target.operations, options.scopedVars, self.formatUnsupportedMultiValue("Operations"));
-                resource_id = self.templateSrv.replace(target.resource_id, options.scopedVars, self.formatUnsupportedMultiValue("Resource ID"));
-                metric_id = self.templateSrv.replace(target.metric_id, options.scopedVars, self.formatUnsupportedMultiValue("Metric ID"));
-                user_label = self.templateSrv.replace(target.label, options.scopedVars, self.formatLabelTemplate);
-                granularity = self.templateSrv.replace(target.granularity, options.scopedVars, self.formatUnsupportedMultiValue("Granularity"));
+                _this.checkMandatoryFields(target);
+                metric_regex = _this.templateSrv.replace(target.metric_name, options.scopedVars, 'regex');
+                resource_search = _this.templateSrv.replace(target.resource_search, options.scopedVars, _this.formatQueryTemplate);
+                operations = _this.templateSrv.replace(target.operations, options.scopedVars, _this.formatUnsupportedMultiValue("Operations"));
+                resource_id = _this.templateSrv.replace(target.resource_id, options.scopedVars, _this.formatUnsupportedMultiValue("Resource ID"));
+                metric_id = _this.templateSrv.replace(target.metric_id, options.scopedVars, _this.formatUnsupportedMultiValue("Metric ID"));
+                user_label = _this.templateSrv.replace(target.label, options.scopedVars, _this.formatLabelTemplate);
+                granularity = _this.templateSrv.replace(target.granularity, options.scopedVars, _this.formatUnsupportedMultiValue("Granularity"));
                 if ((target.queryMode === "resource_search" || target.queryMode === "resource_aggregation")
-                    && self.isJsonQuery(resource_search)) {
+                    && _this.isJsonQuery(resource_search)) {
                     try {
                         angular.toJson(angular.fromJson(resource_search));
                     }
@@ -112,7 +111,7 @@ var GnocchiDatasource = (function () {
                 }
             }
             catch (err) {
-                return self.$q.reject(err);
+                return _this.$q.reject(err);
             }
             if (granularity) {
                 default_measures_req.params.granularity = granularity;
@@ -133,25 +132,25 @@ var GnocchiDatasource = (function () {
                     default_measures_req.data['search'] = resource_search;
                     default_measures_req.data['resource_type'] = resource_type;
                 }
-                return self._retrieve_aggregates(user_label || "unlabeled", default_measures_req);
+                return _this._retrieve_aggregates(user_label || "unlabeled", default_measures_req);
             }
             else if (target.queryMode === "resource_search" || target.queryMode === "resource_aggregation") {
-                var resource_search_req = self.buildQueryRequest(resource_type, resource_search);
-                return self._gnocchi_request(resource_search_req).then(function (result) {
+                var resource_search_req = _this.buildQueryRequest(resource_type, resource_search);
+                return _this._gnocchi_request(resource_search_req).then(function (result) {
                     var re = new RegExp(metric_regex);
                     var metrics = {};
                     _.forEach(result, function (resource) {
                         _.forOwn(resource["metrics"], function (id, name) {
                             if (re.test(name)) {
-                                metrics[id] = self._compute_label(user_label, resource, name, target.aggregator);
+                                metrics[id] = _this._compute_label(user_label, resource, name, target.aggregator);
                             }
                         });
                     });
                     if (target.queryMode === "resource_search") {
-                        return self.$q.all(_.map(metrics, function (label, id) {
+                        return _this.$q.all(_.map(metrics, function (label, id) {
                             var measures_req = _.merge({}, default_measures_req);
                             measures_req.url = 'v1/metric/' + id + '/measures';
-                            return self._retrieve_measures(label, measures_req, target.draw_missing_datapoint_as_zero);
+                            return _this._retrieve_measures(label, measures_req, target.draw_missing_datapoint_as_zero);
                         }));
                     }
                     else {
@@ -167,7 +166,7 @@ var GnocchiDatasource = (function () {
                             measures_req.params.needed_overlap = target.needed_overlap;
                         }
                         // We don't pass draw_missing_datapoint_as_zero, this is done by fill
-                        return self._retrieve_measures(user_label || "unlabeled", measures_req, false);
+                        return _this._retrieve_measures(user_label || "unlabeled", measures_req, false);
                     }
                 });
             }
@@ -175,33 +174,33 @@ var GnocchiDatasource = (function () {
                 var resource_req = {
                     url: 'v1/resource/' + resource_type + '/' + resource_id,
                 };
-                return self._gnocchi_request(resource_req).then(function (resource) {
-                    var label = self._compute_label(user_label, resource, metric_regex, target.aggregator);
+                return _this._gnocchi_request(resource_req).then(function (resource) {
+                    var label = _this._compute_label(user_label, resource, metric_regex, target.aggregator);
                     default_measures_req.url = ('v1/resource/' + resource_type + '/' +
                         resource_id + '/metric/' + metric_regex + '/measures');
-                    return self._retrieve_measures(label, default_measures_req, target.draw_missing_datapoint_as_zero);
+                    return _this._retrieve_measures(label, default_measures_req, target.draw_missing_datapoint_as_zero);
                 });
             }
             else if (target.queryMode === "metric") {
                 var metric_req = {
                     url: 'v1/metric/' + metric_id,
                 };
-                return self._gnocchi_request(metric_req).then(function (metric) {
+                return _this._gnocchi_request(metric_req).then(function (metric) {
                     var label;
                     if (user_label) {
                         // NOTE(sileht): The resource returned is currently incomplete
                         // https://github.com/gnocchixyz/gnocchi/issues/310
-                        label = self._compute_label(user_label, metric['resource'], metric["name"], target.aggregator);
+                        label = _this._compute_label(user_label, metric['resource'], metric["name"], target.aggregator);
                     }
                     else {
                         label = metric_id;
                     }
                     default_measures_req.url = 'v1/metric/' + metric_id + '/measures';
-                    return self._retrieve_measures(label, default_measures_req, target.draw_missing_datapoint_as_zero);
+                    return _this._retrieve_measures(label, default_measures_req, target.draw_missing_datapoint_as_zero);
                 });
             }
         });
-        return self.$q.all(promises).then(function (results) {
+        return this.$q.all(promises).then(function (results) {
             return { data: _.flattenDeep(results) };
         });
     };
@@ -209,14 +208,14 @@ var GnocchiDatasource = (function () {
     /// Measures helpers
     //////////////////////
     GnocchiDatasource.prototype._retrieve_measures = function (label, reqs, draw_missing_datapoint_as_zero) {
-        var self = this;
-        return self._gnocchi_request(reqs).then(function (result) {
-            return self._parse_measures(label, result, draw_missing_datapoint_as_zero);
+        var _this = this;
+        return this._gnocchi_request(reqs).then(function (result) {
+            return _this._parse_measures(label, result, draw_missing_datapoint_as_zero);
         });
     };
     GnocchiDatasource.prototype._retrieve_aggregates = function (user_label, reqs) {
-        var self = this;
-        return self._gnocchi_request(reqs).then(function (result) {
+        var _this = this;
+        return this._gnocchi_request(reqs).then(function (result) {
             if (reqs.data.search === undefined) {
                 var metrics = {};
                 _.forEach(result['references'], function (metric) {
@@ -224,8 +223,8 @@ var GnocchiDatasource = (function () {
                 });
                 return _.map(Object.keys(result["measures"]), function (mid) {
                     return _.map(Object.keys(result["measures"][mid]), function (agg) {
-                        var label = self._compute_label(user_label, null, mid, agg);
-                        return self._parse_measures(label, result["measures"][mid][agg], false);
+                        var label = _this._compute_label(user_label, null, mid, agg);
+                        return _this._parse_measures(label, result["measures"][mid][agg], false);
                     });
                 });
             }
@@ -237,8 +236,8 @@ var GnocchiDatasource = (function () {
                 return _.map(Object.keys(result["measures"]), function (rid) {
                     return _.map(Object.keys(result["measures"][rid]), function (metric_name) {
                         return _.map(Object.keys(result["measures"][rid][metric_name]), function (agg) {
-                            var label = self._compute_label(user_label, resources[rid], metric_name, agg);
-                            return self._parse_measures(label, result["measures"][rid][metric_name][agg], false);
+                            var label = _this._compute_label(user_label, resources[rid], metric_name, agg);
+                            return _this._parse_measures(label, result["measures"][rid][metric_name][agg], false);
                         });
                     });
                 });
@@ -299,7 +298,6 @@ var GnocchiDatasource = (function () {
     /// Completion queries
     /////////////////////////
     GnocchiDatasource.prototype.performSuggestQuery = function (query, type, target) {
-        var self = this;
         var options = { url: null };
         var attribute = "id";
         var getter = function (result) {
@@ -321,29 +319,28 @@ var GnocchiDatasource = (function () {
                 };
             }
             else {
-                return self.$q.when([]);
+                return this.$q.when([]);
             }
         }
         else {
-            return self.$q.when([]);
+            return this.$q.when([]);
         }
-        return self._gnocchi_request(options).then(getter);
+        return this._gnocchi_request(options).then(getter);
     };
     GnocchiDatasource.prototype.metricFindQuery = function (query) {
-        var self = this;
         var req = { method: 'POST', url: null, data: null, params: { filter: null } };
         var resourceQuery = query.match(/^resources\(([^,]*),\s?([^,]*),\s?([^\)]+?)\)/);
         if (resourceQuery) {
             var resource_search;
             try {
-                req.url = self.templateSrv.replace('v1/search/resource/' + resourceQuery[1]);
-                resource_search = self.templateSrv.replace(resourceQuery[3], {}, self.formatQueryTemplate);
+                req.url = this.templateSrv.replace('v1/search/resource/' + resourceQuery[1]);
+                resource_search = this.templateSrv.replace(resourceQuery[3], {}, this.formatQueryTemplate);
                 if (this.isJsonQuery(resource_search)) {
                     angular.toJson(angular.fromJson(resource_search));
                 }
             }
             catch (err) {
-                return self.$q.reject(err);
+                return this.$q.reject(err);
             }
             if (this.isJsonQuery(resource_search)) {
                 req.data = resource_search;
@@ -351,7 +348,7 @@ var GnocchiDatasource = (function () {
             else {
                 req.params.filter = resource_search;
             }
-            return self._gnocchi_request(req).then(function (result) {
+            return this._gnocchi_request(req).then(function (result) {
                 var values = _.map(result, function (resource) {
                     var value = resource[resourceQuery[2]];
                     if (resourceQuery[2] === "metrics") {
@@ -368,25 +365,24 @@ var GnocchiDatasource = (function () {
         if (metricsQuery) {
             try {
                 req.method = 'GET';
-                req.url = 'v1/resource/generic/' + self.templateSrv.replace(metricsQuery[1]);
+                req.url = 'v1/resource/generic/' + this.templateSrv.replace(metricsQuery[1]);
             }
             catch (err) {
-                return self.$q.reject(err);
+                return this.$q.reject(err);
             }
-            return self._gnocchi_request(req).then(function (resource) {
+            return this._gnocchi_request(req).then(function (resource) {
                 return _.map(Object.keys(resource["metrics"]), function (m) {
                     return { text: m };
                 });
             });
         }
-        return self.$q.when([]);
+        return this.$q.when([]);
     };
     ////////////////////////////
     /// Datasource validation
     ////////////////////////////
     GnocchiDatasource.prototype.testDatasource = function () {
-        var self = this;
-        return self._gnocchi_request({ 'url': 'v1/resource' }).then(function () {
+        return this._gnocchi_request({ 'url': 'v1/resource' }).then(function () {
             return { status: "success", message: "Data source is working", title: "Success" };
         }, function (reason) {
             if (reason.status === 401) {
@@ -404,7 +400,6 @@ var GnocchiDatasource = (function () {
     /// Query
     ////////////////
     GnocchiDatasource.prototype.buildQueryRequest = function (resource_type, resource_search) {
-        var self = this;
         var resource_search_req;
         if (this.isJsonQuery(resource_search)) {
             resource_search_req = {
@@ -476,7 +471,6 @@ var GnocchiDatasource = (function () {
         }
     };
     GnocchiDatasource.prototype.formatUnsupportedMultiValue = function (field) {
-        var self = this;
         return function (value, variable, formater) {
             if (typeof value === 'string') {
                 return value;
@@ -512,7 +506,6 @@ var GnocchiDatasource = (function () {
         return query.trim()[0] === '{';
     };
     GnocchiDatasource.prototype.checkMandatoryFields = function (target) {
-        var self = this;
         var mandatory = [];
         switch (target.queryMode) {
             case "metric":
@@ -556,35 +549,35 @@ var GnocchiDatasource = (function () {
     /// KEYSTONE STUFFS
     //////////////////////
     GnocchiDatasource.prototype._gnocchi_request = function (additional_options) {
-        var self = this;
-        var deferred = self.$q.defer();
-        self._gnocchi_auth_request(deferred, function () {
+        var _this = this;
+        var deferred = this.$q.defer();
+        this._gnocchi_auth_request(deferred, function () {
             var options = {
                 url: null,
                 method: null,
                 headers: null,
-                withCredentials: self.withCredentials
+                withCredentials: _this.withCredentials
             };
             angular.merge(options, additional_options);
-            if (self.url) {
-                options.url = self.url + options.url;
+            if (_this.url) {
+                options.url = _this.url + options.url;
             }
             if (!options.method) {
                 options.method = 'GET';
             }
             if (!options.headers) {
-                options.headers = self.default_headers;
+                options.headers = _this.default_headers;
             }
-            return self.backendSrv.datasourceRequest(options).then(function (response) {
+            return _this.backendSrv.datasourceRequest(options).then(function (response) {
                 deferred.resolve(response.data);
             });
         }, true);
         return deferred.promise;
     };
     GnocchiDatasource.prototype._gnocchi_auth_request = function (deferred, callback, retry) {
-        var self = this;
-        if (self.keystone_endpoint !== null && self.url === null) {
-            self._keystone_auth_request(deferred, callback);
+        var _this = this;
+        if (this.keystone_endpoint !== null && this.url === null) {
+            this._keystone_auth_request(deferred, callback);
         }
         else {
             callback().then(undefined, function (reason) {
@@ -597,8 +590,8 @@ var GnocchiDatasource = (function () {
                     deferred.reject(reason);
                 }
                 else if (reason.status === 401) {
-                    if (self.keystone_endpoint !== null && retry) {
-                        self._keystone_auth_request(deferred, callback);
+                    if (_this.keystone_endpoint !== null && retry) {
+                        _this._keystone_auth_request(deferred, callback);
                     }
                     else {
                         deferred.reject({ 'message': "Gnocchi authentication failure" });
@@ -619,47 +612,47 @@ var GnocchiDatasource = (function () {
         }
     };
     GnocchiDatasource.prototype._keystone_auth_request = function (deferred, callback) {
-        var self = this;
+        var _this = this;
         var options = {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            url: self.keystone_endpoint + 'v3/auth/tokens',
+            url: this.keystone_endpoint + 'v3/auth/tokens',
             data: {
                 "auth": {
                     "identity": {
                         "methods": ["password"],
                         "password": {
                             "user": {
-                                "name": self.username,
-                                "password": self.password,
-                                "domain": { "id": self.domain }
+                                "name": this.username,
+                                "password": this.password,
+                                "domain": { "id": this.domain }
                             }
                         }
                     },
                     "scope": {
                         "project": {
-                            "domain": { "id": self.domain },
-                            "name": self.project,
+                            "domain": { "id": this.domain },
+                            "name": this.project,
                         }
                     }
                 }
             }
         };
-        self.backendSrv.datasourceRequest(options).then(function (result) {
-            self.default_headers['X-Auth-Token'] = result.headers('X-Subject-Token');
+        this.backendSrv.datasourceRequest(options).then(function (result) {
+            _this.default_headers['X-Auth-Token'] = result.headers('X-Subject-Token');
             _.each(result.data['token']['catalog'], function (service) {
                 if (service['type'] === 'metric') {
                     _.each(service['endpoints'], function (endpoint) {
                         if (endpoint['interface'] === 'public') {
-                            self.url = self.sanitize_url(endpoint['url']);
+                            _this.url = _this.sanitize_url(endpoint['url']);
                         }
                     });
                 }
             });
-            if (self.url) {
-                self._gnocchi_auth_request(deferred, callback, false);
+            if (_this.url) {
+                _this._gnocchi_auth_request(deferred, callback, false);
             }
             else {
                 deferred.reject({ 'message': "'metric' endpoint not found in Keystone catalog" });

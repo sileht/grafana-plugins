@@ -32,7 +32,6 @@
     "grunt-contrib-copy": "^1.0.0",
     "grunt-contrib-uglify": "^3.0.1",
     "grunt-contrib-watch": "^1.0.0",
-    "grunt-execute": "^0.2.2",
     "grunt-karma": "^2.0.0",
     "grunt-mocha-test": "^0.13.2",
     "grunt-systemjs-builder": "^1.0.0",
@@ -50,7 +49,8 @@
     "q": "^1.5.0",
     "systemjs": "^0.20.15",
     "tslint": "^5.5.0",
-    "typescript": "^2.4.2"
+    "typescript": "^2.4.2",
+    "watchify": "^3"
   },
   "dependencies": {
     "angular": "^1.6.5",

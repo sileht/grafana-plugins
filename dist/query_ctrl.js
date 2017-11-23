@@ -15,6 +15,9 @@ var GnocchiDatasourceQueryCtrl = (function () {
             { text: 'resource ID and metric name (deprecated)', value: 'resource' },
             { text: 'metric ID', value: 'metric' }
         ];
+        this.datasource.requireVersion("4.1.1").then(function () {
+            _this.queryModes.slice(0, 0, { text: 'dynamic aggregates', value: 'dynamic_aggregates' });
+        });
         if (!this.target.refId) {
             this.target.refId = this.getNextQueryLetter();
         }
@@ -27,6 +30,10 @@ var GnocchiDatasourceQueryCtrl = (function () {
         }
         if (this.target.draw_missing_datapoint_as_zero === undefined) {
             this.target.draw_missing_datapoint_as_zero = true;
+        }
+        if (this.target.fill === undefined && this.target.draw_missing_datapoint_as_zero) {
+            // backward compat.
+            this.target.fill = 0;
         }
         if (!this.target.queryMode) {
             this.target.queryMode = "resource_search";

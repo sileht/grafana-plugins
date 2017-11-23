@@ -26,6 +26,3 @@ node_modules
 src/.baseDir.ts
 .tscache
 package-lock.json
-
-# Compiled stuffs
-dist/*

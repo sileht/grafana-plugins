@@ -12,6 +12,7 @@ var GnocchiDatasource = (function () {
         self.type = 'gnocchi';
         self.name = instanceSettings.name;
         self.supportMetrics = true;
+        self.version = null;
         self.default_headers = {
             'Content-Type': 'application/json',
         };
@@ -65,7 +66,7 @@ var GnocchiDatasource = (function () {
                 data: null,
                 method: null,
                 params: {
-                    'aggregation': target.aggregator,
+                    'aggregation': null,
                     'reaggregation': null,
                     'start': options.range.from.toISOString(),
                     'end': null,
@@ -73,6 +74,8 @@ var GnocchiDatasource = (function () {
                     'granularity': null,
                     'filter': null,
                     'needed_overlap': null,
+                    'fill': null,
+                    'details': null,
                     'metric': null
                 }
             };
@@ -88,10 +91,12 @@ var GnocchiDatasource = (function () {
             var metric_id;
             var user_label;
             var granularity;
+            var operations;
             try {
                 self.checkMandatoryFields(target);
                 metric_regex = self.templateSrv.replace(target.metric_name, options.scopedVars, 'regex');
                 resource_search = self.templateSrv.replace(target.resource_search, options.scopedVars, self.formatQueryTemplate);
+                operations = self.templateSrv.replace(target.operations, options.scopedVars, self.formatUnsupportedMultiValue("Operations"));
                 resource_id = self.templateSrv.replace(target.resource_id, options.scopedVars, self.formatUnsupportedMultiValue("Resource ID"));
                 metric_id = self.templateSrv.replace(target.metric_id, options.scopedVars, self.formatUnsupportedMultiValue("Metric ID"));
                 user_label = self.templateSrv.replace(target.label, options.scopedVars, self.formatLabelTemplate);
@@ -112,7 +117,25 @@ var GnocchiDatasource = (function () {
             if (granularity) {
                 default_measures_req.params.granularity = granularity;
             }
-            if (target.queryMode === "resource_search" || target.queryMode === "resource_aggregation") {
+            if (target.queryMode !== "dynamic_aggregates") {
+                default_measures_req.params.aggregation = target.aggregator;
+            }
+            if (target.queryMode === "dynamic_aggregates") {
+                default_measures_req.url = 'v1/aggregates';
+                default_measures_req.method = 'POST';
+                default_measures_req.params.fill = target.fill;
+                default_measures_req.params.needed_overlap = target.needed_overlap;
+                default_measures_req.params.details = 'true';
+                default_measures_req.data = {
+                    'operations': operations
+                };
+                if (resource_search && resource_search.trim() !== "") {
+                    default_measures_req.data['search'] = resource_search;
+                    default_measures_req.data['resource_type'] = resource_type;
+                }
+                return self._retrieve_aggregates(user_label || "unlabeled", default_measures_req);
+            }
+            else if (target.queryMode === "resource_search" || target.queryMode === "resource_aggregation") {
                 var resource_search_req = self.buildQueryRequest(resource_type, resource_search);
                 return self._gnocchi_request(resource_search_req).then(function (result) {
                     var re = new RegExp(metric_regex);
@@ -120,7 +143,7 @@ var GnocchiDatasource = (function () {
                     _.forEach(result, function (resource) {
                         _.forOwn(resource["metrics"], function (id, name) {
                             if (re.test(name)) {
-                                metrics[id] = self._compute_label(user_label, resource, name);
+                                metrics[id] = self._compute_label(user_label, resource, name, target.aggregator);
                             }
                         });
                     });
@@ -135,9 +158,16 @@ var GnocchiDatasource = (function () {
                         var measures_req = _.merge({}, default_measures_req);
                         measures_req.url = 'v1/aggregation/metric';
                         measures_req.params.metric = _.keysIn(metrics);
-                        measures_req.params.reaggregation = target.reaggregator,
+                        measures_req.params.reaggregation = target.reaggregator;
+                        measures_req.params.fill = target.fill;
+                        if (target.needed_overlap === undefined) {
+                            measures_req.params.needed_overlap = 0;
+                        }
+                        else {
                             measures_req.params.needed_overlap = target.needed_overlap;
-                        return self._retrieve_measures(user_label || "unlabeled", measures_req, target.draw_missing_datapoint_as_zero);
+                        }
+                        // We don't pass draw_missing_datapoint_as_zero, this is done by fill
+                        return self._retrieve_measures(user_label || "unlabeled", measures_req, false);
                     }
                 });
             }
@@ -146,7 +176,7 @@ var GnocchiDatasource = (function () {
                     url: 'v1/resource/' + resource_type + '/' + resource_id,
                 };
                 return self._gnocchi_request(resource_req).then(function (resource) {
-                    var label = self._compute_label(user_label, resource, metric_regex);
+                    var label = self._compute_label(user_label, resource, metric_regex, target.aggregator);
                     default_measures_req.url = ('v1/resource/' + resource_type + '/' +
                         resource_id + '/metric/' + metric_regex + '/measures');
                     return self._retrieve_measures(label, default_measures_req, target.draw_missing_datapoint_as_zero);
@@ -161,7 +191,7 @@ var GnocchiDatasource = (function () {
                     if (user_label) {
                         // NOTE(sileht): The resource returned is currently incomplete
                         // https://github.com/gnocchixyz/gnocchi/issues/310
-                        label = self._compute_label(user_label, metric['resource'], metric["name"]);
+                        label = self._compute_label(user_label, metric['resource'], metric["name"], target.aggregator);
                     }
                     else {
                         label = metric_id;
@@ -172,44 +202,81 @@ var GnocchiDatasource = (function () {
             }
         });
         return self.$q.all(promises).then(function (results) {
-            return { data: _.flatten(results) };
+            return { data: _.flattenDeep(results) };
         });
     };
-    GnocchiDatasource.prototype._retrieve_measures = function (name, reqs, draw_missing_datapoint_as_zero) {
+    //////////////////////
+    /// Measures helpers
+    //////////////////////
+    GnocchiDatasource.prototype._retrieve_measures = function (label, reqs, draw_missing_datapoint_as_zero) {
         var self = this;
         return self._gnocchi_request(reqs).then(function (result) {
-            var dps = [];
-            var last_granularity;
-            var last_timestamp;
-            var last_value;
-            // NOTE(sileht): sample are ordered by granularity, then timestamp.
-            _.each(_.toArray(result).reverse(), function (metricData) {
-                var granularity = metricData[1];
-                var timestamp = moment(metricData[0], moment.ISO_8601);
-                var value = metricData[2];
-                if (last_timestamp !== undefined) {
-                    // We have a more precise granularity
-                    if (timestamp.valueOf() >= last_timestamp.valueOf()) {
-                        return;
-                    }
-                    if (draw_missing_datapoint_as_zero) {
-                        var c_timestamp = last_timestamp;
-                        c_timestamp.subtract(last_granularity, "seconds");
-                        while (timestamp.valueOf() < c_timestamp.valueOf()) {
-                            dps.push([0, c_timestamp.valueOf()]);
-                            c_timestamp.subtract(last_granularity, "seconds");
-                        }
-                    }
-                }
-                last_timestamp = timestamp;
-                last_granularity = granularity;
-                last_value = value;
-                dps.push([last_value, last_timestamp.valueOf()]);
-            });
-            return { target: name, datapoints: _.toArray(dps).reverse() };
+            return self._parse_measures(label, result, draw_missing_datapoint_as_zero);
         });
     };
-    GnocchiDatasource.prototype._compute_label = function (label, resource, metric) {
+    GnocchiDatasource.prototype._retrieve_aggregates = function (user_label, reqs) {
+        var self = this;
+        return self._gnocchi_request(reqs).then(function (result) {
+            if (reqs.data.search === undefined) {
+                var metrics = {};
+                _.forEach(result['references'], function (metric) {
+                    metrics[metric["id"]] = metric;
+                });
+                return _.map(Object.keys(result["measures"]), function (mid) {
+                    return _.map(Object.keys(result["measures"][mid]), function (agg) {
+                        var label = self._compute_label(user_label, null, mid, agg);
+                        return self._parse_measures(label, result["measures"][mid][agg], false);
+                    });
+                });
+            }
+            else {
+                var resources = {};
+                _.forEach(result['references'], function (resource) {
+                    resources[resource["id"]] = resource;
+                });
+                return _.map(Object.keys(result["measures"]), function (rid) {
+                    return _.map(Object.keys(result["measures"][rid]), function (metric_name) {
+                        return _.map(Object.keys(result["measures"][rid][metric_name]), function (agg) {
+                            var label = self._compute_label(user_label, resources[rid], metric_name, agg);
+                            return self._parse_measures(label, result["measures"][rid][metric_name][agg], false);
+                        });
+                    });
+                });
+            }
+        });
+    };
+    GnocchiDatasource.prototype._parse_measures = function (name, measures, draw_missing_datapoint_as_zero) {
+        var dps = [];
+        var last_granularity;
+        var last_timestamp;
+        var last_value;
+        // NOTE(sileht): sample are ordered by granularity, then timestamp.
+        _.each(_.toArray(measures).reverse(), function (metricData) {
+            var granularity = metricData[1];
+            var timestamp = moment(metricData[0], moment.ISO_8601);
+            var value = metricData[2];
+            if (last_timestamp !== undefined) {
+                // We have a more precise granularity
+                if (timestamp.valueOf() >= last_timestamp.valueOf()) {
+                    return;
+                }
+                if (draw_missing_datapoint_as_zero) {
+                    var c_timestamp = last_timestamp;
+                    c_timestamp.subtract(last_granularity, "seconds");
+                    while (timestamp.valueOf() < c_timestamp.valueOf()) {
+                        dps.push([0, c_timestamp.valueOf()]);
+                        c_timestamp.subtract(last_granularity, "seconds");
+                    }
+                }
+            }
+            last_timestamp = timestamp;
+            last_granularity = granularity;
+            last_value = value;
+            dps.push([last_value, last_timestamp.valueOf()]);
+        });
+        return { target: name, datapoints: _.toArray(dps).reverse() };
+    };
+    GnocchiDatasource.prototype._compute_label = function (label, resource, metric, aggregation) {
         if (label) {
             var res = label;
             if (resource) {
@@ -220,12 +287,17 @@ var GnocchiDatasource = (function () {
             }
             res = res.replace("$metric", metric);
             res = res.replace("${metric}", metric);
+            res = res.replace("$aggregation", aggregation);
+            res = res.replace("${aggregation}", aggregation);
             return res;
         }
         else {
             return ((resource) ? resource["id"] : "no label");
         }
     };
+    /////////////////////////
+    /// Completion queries
+    /////////////////////////
     GnocchiDatasource.prototype.performSuggestQuery = function (query, type, target) {
         var self = this;
         var options = { url: null };
@@ -309,6 +381,9 @@ var GnocchiDatasource = (function () {
         }
         return self.$q.when([]);
     };
+    ////////////////////////////
+    /// Datasource validation
+    ////////////////////////////
     GnocchiDatasource.prototype.testDatasource = function () {
         var self = this;
         return self._gnocchi_request({ 'url': 'v1/resource' }).then(function () {
@@ -352,6 +427,54 @@ var GnocchiDatasource = (function () {
     //////////////////////
     /// Utils
     //////////////////////
+    GnocchiDatasource.prototype.requireVersion = function (version) {
+        var _this = this;
+        // this.version is a sum of 3 int where:
+        // major  * 1000000
+        // minor  * 1000
+        // fix    * 1
+        var deferred = this.$q.defer();
+        version = this.parseVersion(version);
+        if (this.version === null) {
+            this._gnocchi_request({ 'url': '' }).then(function (result) {
+                console.log("Gnocchi build: " + result.build);
+                if (result.build !== undefined) {
+                    _this.version = _this.parseVersion(result.build);
+                }
+                else {
+                    // Assume 3.1.0
+                    _this.version = 300010000;
+                }
+                if (_this.version >= version) {
+                    deferred.resolve();
+                }
+                else {
+                    deferred.reject();
+                }
+            });
+        }
+        else if (this.version >= version) {
+            deferred.resolve();
+        }
+        else {
+            deferred.reject();
+        }
+        return deferred.promise;
+    };
+    GnocchiDatasource.prototype.parseVersion = function (version) {
+        var v = version.split(".");
+        var major = parseInt(v[0]);
+        var minor = parseInt(v[1]);
+        var fix = parseInt(v[2]);
+        if (major !== null && minor !== null && fix !== null) {
+            return major * 1000000 + minor * 1000 + fix;
+        }
+        else {
+            // Assume 3.1.0
+            console.log("Gnocchi version unparsable: " + version);
+            return 300010000;
+        }
+    };
     GnocchiDatasource.prototype.formatUnsupportedMultiValue = function (field) {
         var self = this;
         return function (value, variable, formater) {

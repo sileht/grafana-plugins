@@ -1,7 +1,7 @@
 Version 1.5.6
 
-* Remove support for Gnocchi transformation
 * Add support fore Dynamic Aggregation
+* Remove support for Gnocchi transformation
 
 Version 1.5.5
 

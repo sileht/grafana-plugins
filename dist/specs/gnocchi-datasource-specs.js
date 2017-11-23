@@ -264,6 +264,7 @@ describe('GnocchiDatasource', function () {
         ];
         var url_expected_get_measures = "/v1/aggregation/metric?metric=1634173a-e3b8-4119-9eba-fa9a4d971c3b&" +
             "metric=58b233f4-65ba-4aeb-97ba-b8bc0feec97e&metric=6ff95458-97b4-4b08-af03-7d18b05d277e&" +
+            "needed_overlap=0&" +
             "aggregation=max&end=2014-04-20T03:20:10.000Z&start=2014-04-10T03:20:10.000Z&stop=2014-04-20T03:20:10.000Z";
         var response_get_measures = [
             ["2014-10-06T14:33:57+00:00", "60.0", "43.1"],
@@ -426,6 +427,141 @@ describe('GnocchiDatasource', function () {
             expect(results.data.length).to.be(2);
             expect(results.data[0].target).to.be('myfirstvm');
             expect(results.data[1].target).to.be('mysecondvm');
+            expect(results.data[0].datapoints[0][0]).to.be('43.1');
+            expect(results.data[0].datapoints[0][1]).to.be(1412606037000);
+            expect(results.data[0].datapoints[1][0]).to.be('12');
+            expect(results.data[0].datapoints[1][1]).to.be(1412606052000);
+            expect(results.data[0].datapoints[2][0]).to.be('2');
+            expect(results.data[0].datapoints[2][1]).to.be(1412606060000);
+        });
+    });
+    describe('Dynamic aggregations resource search', function () {
+        var query = {
+            range: { from: moment.utc([2014, 3, 10, 3, 20, 10]), to: moment.utc([2014, 3, 20, 3, 20, 10]) },
+            targets: [{ queryMode: 'dynamic_aggregates', operations: '(* 2 (metric cpu_util mean))',
+                    resource_type: 'generic',
+                    resource_search: 'server_group="autoscalig_group"',
+                    label: '${host} - ${display_name} - ${metric} - ${aggregation}', fill: 102 }],
+            interval: '1s'
+        };
+        var url_expected_measure = '/v1/aggregates?details=true&end=2014-04-20T03:20:10.000Z&fill=102&start=2014-04-10T03:20:10.000Z' +
+            '&stop=2014-04-20T03:20:10.000Z';
+        // NOTE(sileht): CONTINUE HERE
+        var response_measure = {
+            "references": [
+                {
+                    "display_name": "myfirstvm",
+                    "host": "compute1",
+                    "id": "6868da77-fa82-4e67-aba9-270c5ae8cbca",
+                    "image_ref": "http://image",
+                    "type": "instance",
+                    "server_group": "autoscalig_group",
+                    "metrics": { "cpu_util": "1634173a-e3b8-4119-9eba-fa9a4d971c3b" }
+                },
+                {
+                    "display_name": "mysecondvm",
+                    "host": "compute3",
+                    "id": "f898ba55-bbea-460f-985c-3d1243348304",
+                    "image_ref": "http://image",
+                    "type": "instance",
+                    "server_group": "autoscalig_group",
+                    "metrics": { "cpu_util": "58b233f4-65ba-4aeb-97ba-b8bc0feec97e",
+                        "cpu_time": "6ff95458-97b4-4b08-af03-7d18b05d277e" }
+                }
+            ],
+            "measures": {
+                "6868da77-fa82-4e67-aba9-270c5ae8cbca": {
+                    "cpu_util": {
+                        "mean": [
+                            ["2014-10-06T14:33:57+00:00", "60.0", "43.1"],
+                            ["2014-10-06T14:34:12+00:00", "60.0", "12"],
+                            ["2014-10-06T14:34:20+00:00", "60.0", "2"],
+                        ]
+                    }
+                },
+                "f898ba55-bbea-460f-985c-3d1243348304": {
+                    "cpu_util": {
+                        "mean": [
+                            ["2014-10-06T14:33:57+00:00", "60.0", "22.1"],
+                            ["2014-10-06T14:34:12+00:00", "60.0", "3"],
+                            ["2014-10-06T14:34:20+00:00", "60.0", "30"],
+                        ]
+                    }
+                }
+            }
+        };
+        var results;
+        beforeEach(function () {
+            $httpBackend.expect('POST', url_expected_measure).respond(response_measure);
+            ds.query(query).then(function (data) { results = data; });
+            $httpBackend.flush();
+        });
+        it("nothing more", function () {
+            $httpBackend.verifyNoOutstandingExpectation();
+            $httpBackend.verifyNoOutstandingRequest();
+        });
+        it('should return series list', function () {
+            expect(results.data.length).to.be(2);
+            expect(results.data[0].target).to.be('compute1 - myfirstvm - cpu_util - mean');
+            expect(results.data[1].target).to.be('compute3 - mysecondvm - cpu_util - mean');
+            expect(results.data[0].datapoints[0][0]).to.be('43.1');
+            expect(results.data[0].datapoints[0][1]).to.be(1412606037000);
+            expect(results.data[0].datapoints[1][0]).to.be('12');
+            expect(results.data[0].datapoints[1][1]).to.be(1412606052000);
+            expect(results.data[0].datapoints[2][0]).to.be('2');
+            expect(results.data[0].datapoints[2][1]).to.be(1412606060000);
+        });
+    });
+    describe('Dynamic aggregations metric ids', function () {
+        var query = {
+            range: { from: moment.utc([2014, 3, 10, 3, 20, 10]), to: moment.utc([2014, 3, 20, 3, 20, 10]) },
+            targets: [{ queryMode: 'dynamic_aggregates', operations: '(* 2 (metric 58b233f4-65ba-4aeb-97ba-b8bc0feec97e mean))',
+                    label: '${metric} - ${aggregation}', fill: 102 }],
+            interval: '1s'
+        };
+        var url_expected_measure = '/v1/aggregates?details=true&end=2014-04-20T03:20:10.000Z&fill=102&start=2014-04-10T03:20:10.000Z' +
+            '&stop=2014-04-20T03:20:10.000Z';
+        // NOTE(sileht): CONTINUE HERE
+        var response_measure = {
+            "references": [
+                {
+                    "id": "6868da77-fa82-4e67-aba9-270c5ae8cbca",
+                },
+                {
+                    "id": "f898ba55-bbea-460f-985c-3d1243348304",
+                }
+            ],
+            "measures": {
+                "6868da77-fa82-4e67-aba9-270c5ae8cbca": {
+                    "mean": [
+                        ["2014-10-06T14:33:57+00:00", "60.0", "43.1"],
+                        ["2014-10-06T14:34:12+00:00", "60.0", "12"],
+                        ["2014-10-06T14:34:20+00:00", "60.0", "2"],
+                    ]
+                },
+                "f898ba55-bbea-460f-985c-3d1243348304": {
+                    "mean": [
+                        ["2014-10-06T14:33:57+00:00", "60.0", "22.1"],
+                        ["2014-10-06T14:34:12+00:00", "60.0", "3"],
+                        ["2014-10-06T14:34:20+00:00", "60.0", "30"],
+                    ]
+                }
+            }
+        };
+        var results;
+        beforeEach(function () {
+            $httpBackend.expect('POST', url_expected_measure).respond(response_measure);
+            ds.query(query).then(function (data) { results = data; });
+            $httpBackend.flush();
+        });
+        it("nothing more", function () {
+            $httpBackend.verifyNoOutstandingExpectation();
+            $httpBackend.verifyNoOutstandingRequest();
+        });
+        it('should return series list', function () {
+            expect(results.data.length).to.be(2);
+            expect(results.data[0].target).to.be('6868da77-fa82-4e67-aba9-270c5ae8cbca - mean');
+            expect(results.data[1].target).to.be('f898ba55-bbea-460f-985c-3d1243348304 - mean');
             expect(results.data[0].datapoints[0][0]).to.be('43.1');
             expect(results.data[0].datapoints[0][1]).to.be(1412606037000);
             expect(results.data[0].datapoints[1][0]).to.be('12');

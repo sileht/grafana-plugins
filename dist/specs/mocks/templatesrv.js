@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-var TemplateSrvMock = (function () {
+var TemplateSrvMock = /** @class */ (function () {
     function TemplateSrvMock() {
     }
     TemplateSrvMock.prototype.replace = function (value, format) {

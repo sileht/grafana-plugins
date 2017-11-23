@@ -4,14 +4,14 @@ var datasource_1 = require("./datasource");
 exports.Datasource = datasource_1.default;
 var query_ctrl_1 = require("./query_ctrl");
 exports.QueryCtrl = query_ctrl_1.GnocchiDatasourceQueryCtrl;
-var GnocchiConfigCtrl = (function () {
+var GnocchiConfigCtrl = /** @class */ (function () {
     function GnocchiConfigCtrl() {
     }
     GnocchiConfigCtrl.templateUrl = 'partials/config.html';
     return GnocchiConfigCtrl;
 }());
 exports.ConfigCtrl = GnocchiConfigCtrl;
-var GnocchiQueryOptionsCtrl = (function () {
+var GnocchiQueryOptionsCtrl = /** @class */ (function () {
     function GnocchiQueryOptionsCtrl() {
     }
     GnocchiQueryOptionsCtrl.templateUrl = 'partials/query.options.html';

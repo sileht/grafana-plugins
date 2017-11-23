@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var _ = require("lodash");
 var angular = require("angular");
 var moment = require("moment");
-var GnocchiDatasource = (function () {
+var GnocchiDatasource = /** @class */ (function () {
     function GnocchiDatasource(instanceSettings, $q, backendSrv, templateSrv) {
         this.$q = $q;
         this.backendSrv = backendSrv;

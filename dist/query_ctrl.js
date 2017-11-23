@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 var _ = require("lodash");
 var angular = require("angular");
-var GnocchiDatasourceQueryCtrl = (function () {
+var GnocchiDatasourceQueryCtrl = /** @class */ (function () {
     function GnocchiDatasourceQueryCtrl($scope, $injector) {
         var _this = this;
         this.$scope = $scope;

@@ -2,6 +2,8 @@
 
 Gnocchi datasource for Grafana 3 and 4
 
+![](https://raw.githubusercontent.com/gnocchixyz/grafana-gnocchi-datasource/master/docs/collectd-dashboard.png)
+
 ## Installation via grafana.net
 
     $ sudo grafana-cli plugins install gnocchixyz-gnocchi-datasource
@@ -39,34 +41,16 @@ This works only if Access = Direct, and CORS is properly configured on Keystone 
 
 Open a graph in edit mode by click the title.
 
-The editor have 4 modes to retreives metrics, you can change the mode by clicking of the pencil on the right.
+The editor have 4 modes to retrieves metrics:
 
-* Measurements of a metric:
-  Create one graph with datapoint of the defined metric
+* Dynamic aggregates (recommended way):
+  Create a *query* to select all resources you need.
+  Create an *operation* that select metric and do math on/between them.
+  Set *label* to name each graph with text or with resource attributes.
 
-  ![](https://raw.githubusercontent.com/gnocchixyz/grafana-gnocchi-datasource/master/docs/gnocchi_query_mode1.png)
+  ![](https://raw.githubusercontent.com/gnocchixyz/grafana-gnocchi-datasource/master/docs/grafana_dynamic.png)
 
-  Metric ID: the id of the metric you are interrested in
-
-* Measurements of metrics of resources:
-  Create one graph per metric find with the query.
-
-  ![](https://raw.githubusercontent.com/gnocchixyz/grafana-gnocchi-datasource/master/docs/gnocchi_query_mode3.png)
-
-  Query: the query to search resources
-  Resource type: the type of the resource (generic, instance, disk, ...)
-  Metric name: the name of the metric
-  Label attribute: the label or the resource attribute to use as label.
-
-* Aggregated measurements of a metric across resources:
-  Create one graph with an aggregation of all datapoints of metrics that match the query.
-
-  ![](https://raw.githubusercontent.com/gnocchixyz/grafana-gnocchi-datasource/master/docs/gnocchi_query_mode4.png)
-
-  Query: the query to search resources
-  Resource type: the type of the resource (generic, instance, disk, ...)
-  Metric name: the name of the metric
-  Label attribute: the label or the resource attribute to use as label.
+Other mode are mainly here old Gnocchi version that doesn't support *Dynamic aggregates*
 
 Each mode also have the aggregator method to use to get datapoints of the metrics.
 
@@ -130,12 +114,10 @@ For details of `Query` format, please refer to the Gnocchi and Gnocchi client do
 ## Current Limitation
 
 Grafana doesn’t allow to query two different servers when using the proxy mode,
-so we are not able to query Keystone for a token and then query gnocchi.
+so we are not able to query Keystone for a token and then query Gnocchi (Except if
+Gnocchi and Keystone live into the same HTTP host).
 
-In proxymode, we need to set a token and the Gnocchi URL on the datasource.
-
-In direct mode, we can use login/password and the Keystone URL.
-Note that CORS MUST be enabled on Keystone and Gnocchi servers.
+In direct mode, CORS MUST be enabled on Keystone and Gnocchi servers.
 
 ## License
 

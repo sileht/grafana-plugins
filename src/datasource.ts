@@ -356,13 +356,35 @@ export default class GnocchiDatasource {
 
     metricFindQuery(query) {
       var req = { method: 'POST', url: null, data: null, params: {filter: null}};
-      var resourceQuery = query.match(/^resources\(([^,]*),\s?([^,]*),\s?([^\)]+?)\)/);
-      if (resourceQuery) {
-        var resource_search;
+      var resource_type;
+      var display_attribute;
+      var value_attribute;
+      var resource_search;
 
+      var resourceQuery = query.match(/^resources\(([^,]*),\s?([^,]*),\s?([^\)]+?),\s?([^\)]+?)\)/);
+      if (resourceQuery) {
+        resource_type = resourceQuery[1];
+        display_attribute = resourceQuery[2];
+        value_attribute = resourceQuery[3];
+        resource_search = resourceQuery[4];
+      } else {
+        // NOTE(sileht): try legacy format
+        resourceQuery = query.match(/^resources\(([^,]*),\s?([^,]*),\s?([^\)]+?)\)/);
+        if (resourceQuery)  {
+          resource_type = resourceQuery[1];
+          display_attribute = "$" + resourceQuery[2];
+          value_attribute = resourceQuery[2];
+          resource_search = resourceQuery[3];
+        }
+      }
+
+      if (resourceQuery) {
+        if (value_attribute.charAt(0) === '$') {
+          value_attribute = value_attribute.slice(1);
+        }
         try {
-          req.url = this.templateSrv.replace('v1/search/resource/' + resourceQuery[1]);
-          resource_search = this.templateSrv.replace(resourceQuery[3], {}, this.formatQueryTemplate);
+          req.url = this.templateSrv.replace('v1/search/resource/' + resource_type);
+          resource_search = this.templateSrv.replace(resource_search, {}, this.formatQueryTemplate);
           if (this.isJsonQuery(resource_search)) {
             angular.toJson(angular.fromJson(resource_search));
           }
@@ -378,16 +400,21 @@ export default class GnocchiDatasource {
         }
 
         return this._gnocchi_request(req).then((result) => {
-          var values = _.map(result, (resource) => {
-            var value = resource[resourceQuery[2]];
-            if ( resourceQuery[2] === "metrics" ){
-              value = _.keys(value);
-            }
-            return value;
-          });
-          return _.map(_.flatten(values), (value) => {
-            return { text: value };
-          });
+          if ( value_attribute === "metrics" ){
+            return _.flatten(_.map(result, (resource) => {
+              return this._gnocchi_request(req).then((result) => {
+                return _.flatten(_.map(result, (resource) => {
+                    return _.keys(resource["metrics"]);
+                }));
+              });
+            }));
+          } else {
+            return _.map(result, (resource) => {
+              var display = this._compute_label(display_attribute, resource, "unknown", "none");
+              var value = resource[value_attribute];
+              return {text: display, value: value};
+            });
+          }
         });
       }
 

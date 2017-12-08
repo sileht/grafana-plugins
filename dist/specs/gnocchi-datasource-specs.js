@@ -109,6 +109,46 @@ describe('GnocchiDatasource', function () {
         var results;
         beforeEach(function () {
             $httpBackend.expect('POST', url_expected_search_resources).respond(response_search_resources);
+            ds.metricFindQuery("resources(instance, $id - $display_name, id, server_group='autoscaling_group')").then(function (data) { results = data; });
+            $httpBackend.flush();
+        });
+        it("nothing more", function () {
+            $httpBackend.verifyNoOutstandingExpectation();
+            $httpBackend.verifyNoOutstandingRequest();
+        });
+        it('should return series list', function () {
+            expect(results.length).to.be(2);
+            expect(results[0].text).to.be('6868da77-fa82-4e67-aba9-270c5ae8cbca - myfirstvm');
+            expect(results[1].text).to.be('f898ba55-bbea-460f-985c-3d1243348304 - mysecondvm');
+            expect(results[0].value).to.be('6868da77-fa82-4e67-aba9-270c5ae8cbca');
+            expect(results[1].value).to.be('f898ba55-bbea-460f-985c-3d1243348304');
+        });
+    });
+    describe('MetricFindQuery resources() legacy query', function () {
+        var url_expected_search_resources = "/v1/search/resource/instance?filter=server_group%3D'autoscaling_group'";
+        var response_search_resources = [
+            {
+                "display_name": "myfirstvm",
+                "host": "compute1",
+                "id": "6868da77-fa82-4e67-aba9-270c5ae8cbca",
+                "image_ref": "http://image",
+                "type": "instance",
+                "server_group": "autoscaling_group",
+                "metrics": { "cpu_util": "1634173a-e3b8-4119-9eba-fa9a4d971c3b" }
+            },
+            {
+                "display_name": "mysecondvm",
+                "host": "compute1",
+                "id": "f898ba55-bbea-460f-985c-3d1243348304",
+                "image_ref": "http://image",
+                "type": "instance",
+                "server_group": "autoscaling_group",
+                "metrics": { "cpu_util": "1634173a-e3b8-4119-9eba-fa9a4d971c3b" }
+            }
+        ];
+        var results;
+        beforeEach(function () {
+            $httpBackend.expect('POST', url_expected_search_resources).respond(response_search_resources);
             ds.metricFindQuery("resources(instance, display_name, server_group='autoscaling_group')").then(function (data) { results = data; });
             $httpBackend.flush();
         });

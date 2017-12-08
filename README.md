@@ -103,6 +103,7 @@ Name | Description
 | ------- | --------|
 `metrics(resource_id)`  | Returns a list of metrics available for the resource identified by ‘resource_id’
 `resources(resource_type, `attribute`, query)` | Returns a list of resource `attribute` matching `query`.
+`resources(resource_type, `attribute1`, `attribute2`, query)` | Returns a list of resource `attribute` matching `query`, `attribute1` is diplayed in selector, `attribute1` used for templating.
 
   ![](https://raw.githubusercontent.com/gnocchixyz/grafana-gnocchi-datasource/master/docs/gnocchi_templating.png)
 

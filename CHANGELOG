@@ -1,3 +1,8 @@
+Version 1.6.1
+
+* Allow to have different attributes for templating
+  (e.g: a dropdown with "$host - $flavor", while template service will use "id")
+
 Version 1.6.0
 
 * Add support fore Dynamic Aggregation

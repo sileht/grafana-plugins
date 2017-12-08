@@ -334,7 +334,7 @@ var GnocchiDatasource = /** @class */ (function () {
         var display_attribute;
         var value_attribute;
         var resource_search;
-        var resourceQuery = query.match(/^resources\(([^,]*),\s?([^,]*),\s?([^\)]+?),\s?([^\)]+?)\)/);
+        var resourceQuery = query.match(/^resources\(([^,]*),\s?([^,]*),\s?([^,]+?),\s?([^\)]+?)\)/);
         if (resourceQuery) {
             resource_type = resourceQuery[1];
             display_attribute = resourceQuery[2];

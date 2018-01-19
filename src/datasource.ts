@@ -361,7 +361,7 @@ export default class GnocchiDatasource {
     }
 
     metricFindQuery(query) {
-      var req = { method: 'POST', url: null, data: null, params: {filter: null}};
+      var req = { method: 'POST', url: null, data: null, params: {filter: null, attrs: null}};
       var resource_type;
       var display_attribute;
       var value_attribute;
@@ -405,7 +405,7 @@ export default class GnocchiDatasource {
           req.params.filter = resource_search;
         }
 
-        return this._gnocchi_request(req).then((result) => {
+        var parseResponse = (result) => {
           if ( value_attribute === "metrics" ){
             return _.flatten(_.map(result, (resource) => {
               return this._gnocchi_request(req).then((result) => {
@@ -421,6 +421,14 @@ export default class GnocchiDatasource {
               return {text: display, value: value};
             });
           }
+        };
+
+        return this.requireVersion("4.2.0").then(() => {
+          // Assume that gnocchi 4.2.0 recognizes attrs parameter
+          req.params.attrs = this.buildAttributeParam(value_attribute, display_attribute);
+          return this._gnocchi_request(req).then(parseResponse);
+        }).catch(() => {
+          return this._gnocchi_request(req).then(parseResponse);
         });
       }
 
@@ -624,6 +632,16 @@ export default class GnocchiDatasource {
       } else {
         return url;
       }
+    }
+
+    buildAttributeParam(value_attribute, display_attribute) {
+      var m1 = _.map(display_attribute.match(/\$[^\$\s{}]+/g) || [], (name: string) => {
+        return name.slice(1);
+      });
+      var m2 = _.map(display_attribute.match(/\${[^\$\s{}]+}/g) || [], (name: string) => {
+        return name.slice(2, -1);
+      });
+      return _.uniq(m1.concat(m2).concat([value_attribute]));
     }
 
     //////////////////////

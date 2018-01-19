@@ -98,31 +98,24 @@ describe('GnocchiDatasource', function() {
   });
 
   describe('MetricFindQuery resources() query', function(){
-    var url_expected_search_resources = "/v1/search/resource/instance?filter=server_group%3D'autoscaling_group'";
+    var url_expected_search_resources = "/v1/search/resource/instance?attrs=id&attrs=display_name" +
+          "&filter=server_group%3D'autoscaling_group'";
+
     var response_search_resources = [
       {
         "display_name": "myfirstvm",
-        "host": "compute1",
         "id": "6868da77-fa82-4e67-aba9-270c5ae8cbca",
-        "image_ref": "http://image",
-        "type": "instance",
-        "server_group": "autoscaling_group",
-        "metrics": {"cpu_util": "1634173a-e3b8-4119-9eba-fa9a4d971c3b"}
       },
       {
         "display_name": "mysecondvm",
-        "host": "compute1",
         "id": "f898ba55-bbea-460f-985c-3d1243348304",
-        "image_ref": "http://image",
-        "type": "instance",
-        "server_group": "autoscaling_group",
-        "metrics": {"cpu_util": "1634173a-e3b8-4119-9eba-fa9a4d971c3b"}
       }
     ];
 
     var results;
 
     beforeEach(function() {
+      $httpBackend.expect('GET', "/").respond({"build": "4.2.0"});
       $httpBackend.expect('POST', url_expected_search_resources).respond(response_search_resources);
       ds.metricFindQuery("resources(instance, $id - $display_name, id, server_group='autoscaling_group')").then(
         function(data) { results = data; });
@@ -146,31 +139,20 @@ describe('GnocchiDatasource', function() {
 
 
   describe('MetricFindQuery resources() legacy query', function(){
-    var url_expected_search_resources = "/v1/search/resource/instance?filter=server_group%3D'autoscaling_group'";
+    var url_expected_search_resources = "/v1/search/resource/instance?attrs=display_name&filter=server_group%3D'autoscaling_group'";
     var response_search_resources = [
       {
-        "display_name": "myfirstvm",
-        "host": "compute1",
-        "id": "6868da77-fa82-4e67-aba9-270c5ae8cbca",
-        "image_ref": "http://image",
-        "type": "instance",
-        "server_group": "autoscaling_group",
-        "metrics": {"cpu_util": "1634173a-e3b8-4119-9eba-fa9a4d971c3b"}
+        "display_name": "myfirstvm"
       },
       {
-        "display_name": "mysecondvm",
-        "host": "compute1",
-        "id": "f898ba55-bbea-460f-985c-3d1243348304",
-        "image_ref": "http://image",
-        "type": "instance",
-        "server_group": "autoscaling_group",
-        "metrics": {"cpu_util": "1634173a-e3b8-4119-9eba-fa9a4d971c3b"}
+        "display_name": "mysecondvm"
       }
     ];
 
     var results;
 
     beforeEach(function() {
+      $httpBackend.expect('GET', "/").respond({"build": "4.2.0"});
       $httpBackend.expect('POST', url_expected_search_resources).respond(response_search_resources);
       ds.metricFindQuery("resources(instance, display_name, server_group='autoscaling_group')").then(function(data) { results = data; });
       $httpBackend.flush();
@@ -735,6 +717,37 @@ describe('GnocchiDatasource', function() {
   });
 
   describe("metricFindQuery resource", function() {
+    var url_expected_search_resources = "/v1/search/resource/instance?attrs=id";
+    var response_search_resources = [
+      {
+        "id": "6868da77-fa82-4e67-aba9-270c5ae8cbca"
+      },
+      {
+        "id": "f898ba55-bbea-460f-985c-3d1243348304"
+      }
+    ];
+
+    var results;
+    beforeEach(function() {
+      $httpBackend.expect('GET', "/").respond({"build": "4.2.0"});
+      $httpBackend.expect('POST', url_expected_search_resources).respond(response_search_resources);
+      ds.metricFindQuery('resources(instance, id, {"=": {"id": "foobar"}})').then(function(data) { results = data; });
+      $httpBackend.flush();
+    });
+
+    it("nothing more", function() {
+      $httpBackend.verifyNoOutstandingExpectation();
+      $httpBackend.verifyNoOutstandingRequest();
+    });
+
+    it('should success', function() {
+      expect(results.length).to.be(2);
+      expect(results[0].text).to.be("6868da77-fa82-4e67-aba9-270c5ae8cbca");
+      expect(results[1].text).to.be("f898ba55-bbea-460f-985c-3d1243348304");
+    });
+  });
+
+  describe("metricFindQuery resource without attrs parameter", function() {
     var url_expected_search_resources = "/v1/search/resource/instance";
     var response_search_resources = [
       {
@@ -759,6 +772,7 @@ describe('GnocchiDatasource', function() {
 
     var results;
     beforeEach(function() {
+      $httpBackend.expect('GET', "/").respond({"build": "4.1.99"});
       $httpBackend.expect('POST', url_expected_search_resources).respond(response_search_resources);
       ds.metricFindQuery('resources(instance, id, {"=": {"id": "foobar"}})').then(function(data) { results = data; });
       $httpBackend.flush();
@@ -970,4 +984,19 @@ describe('GnocchiDatasource', function() {
     });
   });
 
+  describe('build attribute parameter', function() {
+    it('complex display attribute', function() {
+      var value_attribute = 'id';
+      var display_attribute = '$name $f$g$$ ${foo_bar-baz}${{} -${id}%';
+      expect(ds.buildAttributeParam(value_attribute, display_attribute))
+        .to.eql(['name', 'f', 'g', 'foo_bar-baz', 'id']);
+    });
+
+    it('empty display attribute', function() {
+      var value_attribute = 'id';
+      var display_attribute = '';
+      expect(ds.buildAttributeParam(value_attribute, display_attribute))
+        .to.eql(['id']);
+    });
+  });
 });

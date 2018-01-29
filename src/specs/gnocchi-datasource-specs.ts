@@ -883,6 +883,37 @@ describe('GnocchiDatasource', function() {
     }
   ];
 
+  var resource_types = [
+    {
+      "attributes": {},
+      "name": "generic",
+      "state": "active"
+    },
+    {
+      "attributes": {
+        "display_name": {
+          "max_length": 255,
+          "min_length": 0,
+          "required": true,
+          "type": "string"
+        },
+      },
+      "name": "instance",
+      "state": "active"
+    },
+  ];
+
+  describe('getResourceTypes', function() {
+    var results;
+    it('should return resource type names', function() {
+      $httpBackend.expect('GET', "/v1/resource_type").respond(resource_types);
+      ds.getResourceTypes().then(function(data) { results = data ; });
+      $httpBackend.flush();
+      expect(results.length).to.be(2);
+      expect(results[0]).to.be('generic');
+      expect(results[1]).to.be('instance');
+    });
+  });
 
   describe('suggestMetricIDs', function() {
     var results;

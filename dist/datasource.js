@@ -12,6 +12,7 @@ var GnocchiDatasource = /** @class */ (function () {
         this.name = instanceSettings.name;
         this.supportMetrics = true;
         this.version = null;
+        this.resource_types = [];
         this.default_headers = {
             'Content-Type': 'application/json',
         };
@@ -157,7 +158,12 @@ var GnocchiDatasource = /** @class */ (function () {
                         var measures_req = _.merge({}, default_measures_req);
                         measures_req.url = 'v1/aggregation/metric';
                         measures_req.params.metric = _.keysIn(metrics);
-                        measures_req.params.reaggregation = target.reaggregator;
+                        if (target.reaggregator !== "none") {
+                            measures_req.params.reaggregation = target.reaggregator;
+                        }
+                        else {
+                            measures_req.params.reaggregation = null;
+                        }
                         measures_req.params.fill = target.fill;
                         if (target.needed_overlap === undefined) {
                             measures_req.params.needed_overlap = 0;
@@ -451,6 +457,25 @@ var GnocchiDatasource = /** @class */ (function () {
     //////////////////////
     /// Utils
     //////////////////////
+    GnocchiDatasource.prototype.getResourceTypes = function () {
+        var _this = this;
+        var deferred = this.$q.defer();
+        if (this.resource_types.length === 0) {
+            this.resource_types = ["generic"];
+            this._gnocchi_request({ url: 'v1/resource_type' }).then(function (result) {
+                _.map(result, function (item) {
+                    if (item["name"] !== "generic") {
+                        _this.resource_types.push(item["name"]);
+                    }
+                });
+                deferred.resolve(_this.resource_types);
+            });
+        }
+        else {
+            deferred.resolve(this.resource_types);
+        }
+        return deferred.promise;
+    };
     GnocchiDatasource.prototype.requireVersion = function (version) {
         var _this = this;
         // this.version is a sum of 3 int where:

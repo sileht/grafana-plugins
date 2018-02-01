@@ -16,6 +16,7 @@ export class GnocchiDatasourceQueryCtrl {
 
   // local stuffs
   aggregators: any;
+  resource_types: any;
   queryModes: any;
   suggestResourceIDs: any;
   suggestMetricIDs: any;
@@ -38,6 +39,10 @@ export class GnocchiDatasourceQueryCtrl {
         );
     });
 
+    this.datasource.getResourceTypes().then((resource_types) => {
+      this.resource_types = resource_types;
+    });
+
     if (!this.target.refId) {
         this.target.refId = this.getNextQueryLetter();
     }
@@ -45,6 +50,9 @@ export class GnocchiDatasourceQueryCtrl {
     // default
     if (!this.target.aggregator) {
         this.target.aggregator = 'mean';
+    }
+    if (!this.target.reaggregator) {
+        this.target.reaggregator = 'none';
     }
 
     if (!this.target.resource_type) {
@@ -67,6 +75,7 @@ export class GnocchiDatasourceQueryCtrl {
     this.suggestResourceIDs = (query, callback) => {
       this.datasource.performSuggestQuery(query, 'resources', this.target).then(callback);
     };
+
     this.suggestMetricIDs = (query, callback)  => {
       this.datasource.performSuggestQuery(query, 'metrics', this.target).then(callback);
     };
@@ -79,15 +88,16 @@ export class GnocchiDatasourceQueryCtrl {
   }
 
 
-  getAggregators() {
-    return _.map(
-        ['mean', 'sum', 'min', 'max',
-         'std', 'median', 'first', 'last', 'count', 'rate:last',
-         '5pct', '10pct', '90pct', '95pct'],
-        function(v) {
-            return {text: v, value: v};
-        }
-    );
+  getAggregators(none) {
+    var agg = ['mean', 'sum', 'min', 'max',
+     'std', 'median', 'first', 'last', 'count', 'rate:last',
+     '5pct', '10pct', '90pct', '95pct'];
+    if (none){
+        agg.splice(0, 0, "none");
+    }
+    return _.map(agg, function(v) {
+      return {text: v, value: v};
+    });
   }
 
   setAggregator(option) {

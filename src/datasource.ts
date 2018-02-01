@@ -17,12 +17,14 @@ export default class GnocchiDatasource {
     roles: string;
     url: string;
     keystone_endpoint: string;
+    resource_types: any;
 
     constructor(instanceSettings, private $q, private backendSrv, private templateSrv) {
       this.type = 'gnocchi';
       this.name = instanceSettings.name;
       this.supportMetrics = true;
       this.version = null;
+      this.resource_types = [];
 
       this.default_headers = {
         'Content-Type': 'application/json',
@@ -181,7 +183,11 @@ export default class GnocchiDatasource {
               var measures_req = _.merge({}, default_measures_req);
               measures_req.url = 'v1/aggregation/metric';
               measures_req.params.metric = _.keysIn(metrics);
-              measures_req.params.reaggregation = target.reaggregator;
+              if (target.reaggregator !== "none") {
+                measures_req.params.reaggregation = target.reaggregator;
+              } else {
+                measures_req.params.reaggregation = null;
+              }
               measures_req.params.fill = target.fill;
               if (target.needed_overlap === undefined) {
                 measures_req.params.needed_overlap = 0;
@@ -482,6 +488,24 @@ export default class GnocchiDatasource {
     //////////////////////
     /// Utils
     //////////////////////
+
+    getResourceTypes() {
+      var deferred = this.$q.defer();
+      if (this.resource_types.length === 0) {
+        this.resource_types = ["generic"];
+        this._gnocchi_request({url: 'v1/resource_type'}).then((result) => {
+           _.map(result, (item) => {
+             if (item["name"] !== "generic") {
+               this.resource_types.push(item["name"]);
+             }
+          });
+          deferred.resolve(this.resource_types);
+        });
+      } else {
+        deferred.resolve(this.resource_types);
+      }
+      return deferred.promise;
+    }
 
     requireVersion(version) {
       // this.version is a sum of 3 int where:

@@ -25,6 +25,7 @@ module.exports = function(grunt) {
               removeComments: false,
               noImplicitAny: false,
               moduleResolution: "node",
+              lib: ["dom", "es2015", "es5", "es6"],
               typeRoots: ["node_modules/@types"],
           }
       },

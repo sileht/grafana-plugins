@@ -18,6 +18,7 @@ export default class GnocchiDatasource {
     url: string;
     keystone_endpoint: string;
     resource_types: any;
+    groupby: any;
 
     constructor(instanceSettings, private $q, private backendSrv, private templateSrv) {
       this.type = 'gnocchi';
@@ -95,6 +96,7 @@ export default class GnocchiDatasource {
             'needed_overlap': null,
             'fill': null,
             'details': null,
+            'groupby': null,
             'metric': null
           }
         };
@@ -112,6 +114,7 @@ export default class GnocchiDatasource {
         var user_label;
         var granularity;
         var operations;
+        var groupby;
 
         try {
           this.checkMandatoryFields(target);
@@ -123,6 +126,7 @@ export default class GnocchiDatasource {
           metric_id = this.templateSrv.replace(target.metric_id, options.scopedVars, this.formatUnsupportedMultiValue("Metric ID"));
           user_label = this.templateSrv.replace(target.label, options.scopedVars, this.formatLabelTemplate);
           granularity = this.templateSrv.replace(target.granularity, options.scopedVars, this.formatUnsupportedMultiValue("Granularity"));
+          groupby = this.templateSrv.replace(target.groupby, options.scopedVars, this.formatGroupBy);
 
           if ((target.queryMode === "resource_search" || target.queryMode === "resource_aggregation")
               && this.isJsonQuery(resource_search)) {
@@ -144,12 +148,17 @@ export default class GnocchiDatasource {
           default_measures_req.params.aggregation = target.aggregator;
         }
 
+        /* DYNAMIC AGGREGATES */
         if (target.queryMode === "dynamic_aggregates") {
+
           default_measures_req.url = 'v1/aggregates';
           default_measures_req.method = 'POST';
           default_measures_req.params.fill = target.fill;
           default_measures_req.params.needed_overlap = target.needed_overlap;
           default_measures_req.params.details = 'true';
+          if (groupby) {
+            default_measures_req.params.groupby = _.split(groupby, ',');
+          }
           default_measures_req.data = {
               'operations': operations
           };
@@ -157,9 +166,24 @@ export default class GnocchiDatasource {
             default_measures_req.data['search'] = resource_search;
             default_measures_req.data['resource_type'] = resource_type;
           }
-          return this._retrieve_aggregates(user_label || "unlabeled", default_measures_req);
+          if (groupby) {
+            return this._retrieve_aggregates_groupby(user_label || "unlabeled", default_measures_req);
+          } else {
+            return this._retrieve_aggregates(user_label || "unlabeled", default_measures_req);
+          }
+
+        /* RESOURCE GROUPBY */
+        } else if (target.queryMode === "resource_groupby") {
+          this.ReqAddResourceQueryAttributes(default_measures_req, resource_type, resource_search);
+          default_measures_req.url = "v1/aggregation/resource/" + resource_type + "/metric/" + target.metric_name;
+          default_measures_req.params.groupby = _.split(groupby, ',');
+          this.ReqAddAggregationOptions(default_measures_req, target);
+          return this._retrieve_legacy_aggregation_groupby(user_label || "unlabeled", default_measures_req);
+
+        /* RESOURCE SEARCH AND AGGREGATION */
         } else if (target.queryMode === "resource_search" || target.queryMode === "resource_aggregation") {
-          var resource_search_req = this.buildQueryRequest(resource_type, resource_search);
+          var resource_search_req = {url: null, method: null, data: null, params: {filter: null}};
+          this.ReqAddResourceQueryAttributes(resource_search_req, resource_type, resource_search);
           return this._gnocchi_request(resource_search_req).then((result) => {
             var re = new RegExp(metric_regex);
             var metrics = {};
@@ -173,6 +197,7 @@ export default class GnocchiDatasource {
             });
 
             if (target.queryMode === "resource_search"){
+                /* RESOURCE SEARCH */
                 return this.$q.all(_.map(metrics, (label, id) => {
                   var measures_req = _.merge({}, default_measures_req);
                   measures_req.url = 'v1/metric/' + id + '/measures';
@@ -180,24 +205,17 @@ export default class GnocchiDatasource {
                                                  target.draw_missing_datapoint_as_zero);
                 }));
             } else {
+              /* RESOURCE AGGREGATION */
               var measures_req = _.merge({}, default_measures_req);
               measures_req.url = 'v1/aggregation/metric';
               measures_req.params.metric = _.keysIn(metrics);
-              if (target.reaggregator !== "none") {
-                measures_req.params.reaggregation = target.reaggregator;
-              } else {
-                measures_req.params.reaggregation = null;
-              }
-              measures_req.params.fill = target.fill;
-              if (target.needed_overlap === undefined) {
-                measures_req.params.needed_overlap = 0;
-              } else {
-                measures_req.params.needed_overlap = target.needed_overlap;
-              }
+              this.ReqAddAggregationOptions(measures_req, target);
               // We don't pass draw_missing_datapoint_as_zero, this is done by fill
               return this._retrieve_measures(user_label || "unlabeled", measures_req, false);
             }
           });
+
+        /* RESOURCE */
         } else if (target.queryMode === "resource") {
           var resource_req = {
             url: 'v1/resource/' + resource_type + '/' + resource_id,
@@ -209,6 +227,8 @@ export default class GnocchiDatasource {
             return this._retrieve_measures(label, default_measures_req,
                                            target.draw_missing_datapoint_as_zero);
           });
+
+        /* METRIC */
         } else if (target.queryMode === "metric") {
           var metric_req = {
             url: 'v1/metric/' + metric_id,
@@ -252,10 +272,15 @@ export default class GnocchiDatasource {
             metrics[metric["id"]] = metric;
           });
           return _.map(Object.keys(result["measures"]), (mid) =>{
-            return _.map(Object.keys(result["measures"][mid]), (agg) => {
-              var label = this._compute_label(user_label, null, mid, agg);
-              return this._parse_measures(label, result["measures"][mid][agg], false);
-            });
+            if (mid === "aggregated") {
+              var label = this._compute_label(user_label, null, "aggregated", "");
+              return this._parse_measures(label, result["measures"]["aggregated"], false);
+            } else {
+              return _.map(Object.keys(result["measures"][mid]), (agg) => {
+                var label = this._compute_label(user_label, null, mid, agg);
+                return this._parse_measures(label, result["measures"][mid][agg], false);
+              });
+            }
           });
         } else {
           var resources = {};
@@ -263,14 +288,53 @@ export default class GnocchiDatasource {
             resources[resource["id"]] = resource;
           });
           return _.map(Object.keys(result["measures"]), (rid) => {
-            return _.map(Object.keys(result["measures"][rid]), (metric_name) => {
-              return _.map(Object.keys(result["measures"][rid][metric_name]), (agg) => {
-                var label = this._compute_label(user_label, resources[rid], metric_name, agg);
-                return this._parse_measures(label, result["measures"][rid][metric_name][agg], false);
+            if (rid === "aggregated") {
+              var label = this._compute_label(user_label, null, "aggregated", "");
+              return this._parse_measures(label, result["measures"]["aggregated"], false);
+            } else {
+              return _.map(Object.keys(result["measures"][rid]), (metric_name) => {
+                return _.map(Object.keys(result["measures"][rid][metric_name]), (agg) => {
+                  var label = this._compute_label(user_label, resources[rid], metric_name, agg);
+                  return this._parse_measures(label, result["measures"][rid][metric_name][agg], false);
+                });
               });
-            });
+            }
           });
         }
+      });
+    }
+
+    _retrieve_legacy_aggregation_groupby(user_label, reqs) {
+      return this._gnocchi_request(reqs).then((result) => {
+        return _.map(result, (group) => {
+          var label = this._compute_label(user_label, group["group"], "aggregated", "");
+          return this._parse_measures(label, group["measures"], false);
+        });
+      });
+    }
+
+    _retrieve_aggregates_groupby(user_label, reqs) {
+      return this._gnocchi_request(reqs).then((result) => {
+        return _.map(result, (group) => {
+          var measures = group["measures"]["measures"];
+          var resources = {};
+          _.forEach(group["measures"]['references'], (resource) => {
+            resources[resource["id"]] = resource;
+          });
+          return _.map(Object.keys(measures), (rid) => {
+            if (rid === "aggregated") {
+              var label = this._compute_label(user_label, group["group"], "aggregated", "");
+              return this._parse_measures(label, measures["aggregated"], false);
+            } else {
+              return _.map(Object.keys(measures[rid]), (metric_name) => {
+                return _.map(Object.keys(measures[rid][metric_name]), (agg) => {
+                  var label = this._compute_label(user_label, resources[rid], metric_name, agg);
+                  return this._parse_measures(label, measures[rid][metric_name][agg], false);
+                });
+              });
+            }
+          });
+        });
       });
     }
 
@@ -339,7 +403,22 @@ export default class GnocchiDatasource {
         });
       };
 
-      if (type === 'metrics') {
+      if (type === 'groupby') {
+        options.url = 'v1/resource_type/' + target.resource_type;
+          getter = function(result) {
+            var common = ["created_by_project_id", "created_by_user_id", "creator",
+                "ended_at", "id", "original_resource_id", "project_id",
+                "revision_end", "revision_start", "started_at", "type", "user_id"];
+            return _.map(common.concat(Object.keys(result["attributes"])), (attr) => {
+                var begin = target.groupby.split(",").slice(-1);
+                if (begin.length > 0) {
+                    return begin.join(",") + "," + attr;
+                } else {
+                    return attr;
+                }
+            });
+          };
+      } else if (type === 'metrics') {
         options.url = 'v1/metric';
 
       } else if (type === 'resources') {
@@ -471,26 +550,31 @@ export default class GnocchiDatasource {
     ////////////////
     /// Query
     ////////////////
-
-    buildQueryRequest(resource_type, resource_search) {
-      var resource_search_req;
-
-      if (this.isJsonQuery(resource_search)) {
-        resource_search_req = {
-          url: 'v1/search/resource/' + resource_type,
-          method: 'POST',
-          data: resource_search,
-        };
+    ReqAddAggregationOptions(base_request, target) {
+      if (target.reaggregator !== "none") {
+        base_request.params.reaggregation = target.reaggregator;
       } else {
-        resource_search_req = {
-          url: 'v1/search/resource/' + resource_type,
-          method: 'POST',
-          params: {
-            filter: resource_search,
-          }
-        };
+        base_request.params.reaggregation = null;
       }
-      return resource_search_req;
+      base_request.params.fill = target.fill;
+      if (target.needed_overlap === undefined) {
+        base_request.params.needed_overlap = 0;
+      } else {
+        base_request.params.needed_overlap = target.needed_overlap;
+      }
+    }
+
+    ReqAddResourceQueryAttributes(base_request, resource_type, resource_search) {
+      var resource_search_req;
+      if (this.isJsonQuery(resource_search)) {
+        base_request.url = 'v1/search/resource/' + resource_type;
+        base_request.method = 'POST';
+        base_request.data = resource_search;
+      } else {
+        base_request.url = 'v1/search/resource/' + resource_type;
+        base_request.method = 'POST';
+        base_request.params.filter = resource_search;
+      }
     }
 
     //////////////////////
@@ -570,6 +654,7 @@ export default class GnocchiDatasource {
         }
       };
     }
+
     formatLabelTemplate(value, variable, formater) {
       if (typeof value === 'string') {
         return value;
@@ -577,6 +662,15 @@ export default class GnocchiDatasource {
         return value[0];
       }
     }
+
+    formatGroupBy(value, variable, formater) {
+      if (typeof value === 'string') {
+        return value;
+      } else {
+        return value.join(",");
+      }
+    }
+
 
     formatQueryTemplate(value, variable, formater) {
       if (typeof value === 'string') {

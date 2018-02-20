@@ -85,29 +85,21 @@ describe('GnocchiDatasource', function () {
         }, null);
     });
     describe('MetricFindQuery resources() query', function () {
-        var url_expected_search_resources = "/v1/search/resource/instance?filter=server_group%3D'autoscaling_group'";
+        var url_expected_search_resources = "/v1/search/resource/instance?attrs=id&attrs=display_name" +
+            "&filter=server_group%3D'autoscaling_group'";
         var response_search_resources = [
             {
                 "display_name": "myfirstvm",
-                "host": "compute1",
                 "id": "6868da77-fa82-4e67-aba9-270c5ae8cbca",
-                "image_ref": "http://image",
-                "type": "instance",
-                "server_group": "autoscaling_group",
-                "metrics": { "cpu_util": "1634173a-e3b8-4119-9eba-fa9a4d971c3b" }
             },
             {
                 "display_name": "mysecondvm",
-                "host": "compute1",
                 "id": "f898ba55-bbea-460f-985c-3d1243348304",
-                "image_ref": "http://image",
-                "type": "instance",
-                "server_group": "autoscaling_group",
-                "metrics": { "cpu_util": "1634173a-e3b8-4119-9eba-fa9a4d971c3b" }
             }
         ];
         var results;
         beforeEach(function () {
+            $httpBackend.expect('GET', "/").respond({ "build": "4.2.0" });
             $httpBackend.expect('POST', url_expected_search_resources).respond(response_search_resources);
             ds.metricFindQuery("resources(instance, $id - $display_name, id, server_group='autoscaling_group')").then(function (data) { results = data; });
             $httpBackend.flush();
@@ -125,29 +117,18 @@ describe('GnocchiDatasource', function () {
         });
     });
     describe('MetricFindQuery resources() legacy query', function () {
-        var url_expected_search_resources = "/v1/search/resource/instance?filter=server_group%3D'autoscaling_group'";
+        var url_expected_search_resources = "/v1/search/resource/instance?attrs=display_name&filter=server_group%3D'autoscaling_group'";
         var response_search_resources = [
             {
-                "display_name": "myfirstvm",
-                "host": "compute1",
-                "id": "6868da77-fa82-4e67-aba9-270c5ae8cbca",
-                "image_ref": "http://image",
-                "type": "instance",
-                "server_group": "autoscaling_group",
-                "metrics": { "cpu_util": "1634173a-e3b8-4119-9eba-fa9a4d971c3b" }
+                "display_name": "myfirstvm"
             },
             {
-                "display_name": "mysecondvm",
-                "host": "compute1",
-                "id": "f898ba55-bbea-460f-985c-3d1243348304",
-                "image_ref": "http://image",
-                "type": "instance",
-                "server_group": "autoscaling_group",
-                "metrics": { "cpu_util": "1634173a-e3b8-4119-9eba-fa9a4d971c3b" }
+                "display_name": "mysecondvm"
             }
         ];
         var results;
         beforeEach(function () {
+            $httpBackend.expect('GET', "/").respond({ "build": "4.2.0" });
             $httpBackend.expect('POST', url_expected_search_resources).respond(response_search_resources);
             ds.metricFindQuery("resources(instance, display_name, server_group='autoscaling_group')").then(function (data) { results = data; });
             $httpBackend.flush();
@@ -475,6 +456,289 @@ describe('GnocchiDatasource', function () {
             expect(results.data[0].datapoints[2][1]).to.be(1412606060000);
         });
     });
+    describe('Resource search GroupBy', function () {
+        var query = {
+            range: { from: moment.utc([2014, 3, 10, 3, 20, 10]), to: moment.utc([2014, 3, 20, 3, 20, 10]) },
+            targets: [{ hide: false, queryMode: 'resource_groupby', resource_search: 'server_group="autoscaling_group"',
+                    resource_type: 'instance', label: '$host - $project_id', metric_name: 'cpu_util', aggregator: 'max',
+                    groupby: 'host,project_id', reaggregator: 'mean'
+                }],
+            interval: '1s'
+        };
+        var url_expected = "/v1/aggregation/resource/instance/metric/cpu_util?aggregation=max&end=2014-04-20T03:20:10.000Z" +
+            "&filter=server_group%3D%22autoscaling_group%22&groupby=host&groupby=project_id&needed_overlap=0" +
+            "&reaggregation=mean&start=2014-04-10T03:20:10.000Z&stop=2014-04-20T03:20:10.000Z";
+        var response = [{
+                "group": {
+                    "host": "compute1",
+                    "project_id": "project1"
+                },
+                "measures": [
+                    ["2014-10-06T14:33:57+00:00", "60.0", "43.1"],
+                    ["2014-10-06T14:34:12+00:00", "60.0", "12"],
+                    ["2014-10-06T14:34:20+00:00", "60.0", "2"],
+                ]
+            }, {
+                "group": {
+                    "host": "compute2",
+                    "project_id": "project2"
+                },
+                "measures": [
+                    ["2014-10-06T14:33:57+00:00", "60.0", "43.1"],
+                    ["2014-10-06T14:34:12+00:00", "60.0", "12"],
+                    ["2014-10-06T14:34:20+00:00", "60.0", "2"],
+                ]
+            }];
+        var results;
+        beforeEach(function () {
+            $httpBackend.expect('POST', url_expected).respond(response);
+            ds.query(query).then(function (data) { results = data; });
+            $httpBackend.flush();
+        });
+        it("nothing more", function () {
+            $httpBackend.verifyNoOutstandingExpectation();
+            $httpBackend.verifyNoOutstandingRequest();
+        });
+        it('should return series list', function () {
+            expect(results.data.length).to.be(2);
+            expect(results.data[0].target).to.be('compute1 - project1');
+            expect(results.data[1].target).to.be('compute2 - project2');
+            expect(results.data[0].datapoints[0][0]).to.be('43.1');
+            expect(results.data[0].datapoints[0][1]).to.be(1412606037000);
+            expect(results.data[0].datapoints[1][0]).to.be('12');
+            expect(results.data[0].datapoints[1][1]).to.be(1412606052000);
+            expect(results.data[0].datapoints[2][0]).to.be('2');
+            expect(results.data[0].datapoints[2][1]).to.be(1412606060000);
+        });
+    });
+    describe('Dynamic aggregations resource search groupby aggregated', function () {
+        var query = {
+            range: { from: moment.utc([2014, 3, 10, 3, 20, 10]), to: moment.utc([2014, 3, 20, 3, 20, 10]) },
+            targets: [{ queryMode: 'dynamic_aggregates', operations: '(* 2 (metric cpu_util mean))',
+                    resource_type: 'generic',
+                    resource_search: 'server_group="autoscalig_group"',
+                    groupby: 'host,project_id',
+                    label: '${host} - ${project_id}', fill: 102 }],
+            interval: '1s'
+        };
+        var url_expected_measure = '/v1/aggregates?details=true&end=2014-04-20T03:20:10.000Z&fill=102&start=2014-04-10T03:20:10.000Z' +
+            '&stop=2014-04-20T03:20:10.000Z&groupby=host&groupby=project_id';
+        // NOTE(sileht): CONTINUE HERE
+        var response_measure = [{
+                "group": {
+                    "host": "compute1",
+                    "project_id": "project1",
+                },
+                "measures": {
+                    "measures": {
+                        "aggregated": [
+                            ["2014-10-06T14:33:57+00:00", "60.0", "43.1"],
+                            ["2014-10-06T14:34:12+00:00", "60.0", "12"],
+                            ["2014-10-06T14:34:20+00:00", "60.0", "2"],
+                        ]
+                    }
+                }
+            }, {
+                "group": {
+                    "host": "compute2",
+                    "project_id": "project2"
+                },
+                "measures": {
+                    "measures": {
+                        "aggregated": [
+                            ["2014-10-06T14:33:57+00:00", "60.0", "43.1"],
+                            ["2014-10-06T14:34:12+00:00", "60.0", "12"],
+                            ["2014-10-06T14:34:20+00:00", "60.0", "2"],
+                        ]
+                    }
+                }
+            }];
+        var results;
+        beforeEach(function () {
+            $httpBackend.expect('POST', url_expected_measure).respond(response_measure);
+            ds.query(query).then(function (data) { results = data; });
+            $httpBackend.flush();
+        });
+        it("nothing more", function () {
+            $httpBackend.verifyNoOutstandingExpectation();
+            $httpBackend.verifyNoOutstandingRequest();
+        });
+        it('should return series list', function () {
+            expect(results.data.length).to.be(2);
+            expect(results.data[0].target).to.be('compute1 - project1');
+            expect(results.data[1].target).to.be('compute2 - project2');
+            expect(results.data[0].datapoints[0][0]).to.be('43.1');
+            expect(results.data[0].datapoints[0][1]).to.be(1412606037000);
+            expect(results.data[0].datapoints[1][0]).to.be('12');
+            expect(results.data[0].datapoints[1][1]).to.be(1412606052000);
+            expect(results.data[0].datapoints[2][0]).to.be('2');
+            expect(results.data[0].datapoints[2][1]).to.be(1412606060000);
+        });
+    });
+    describe('Dynamic aggregations resource search groupby', function () {
+        var query = {
+            range: { from: moment.utc([2014, 3, 10, 3, 20, 10]), to: moment.utc([2014, 3, 20, 3, 20, 10]) },
+            targets: [{ queryMode: 'dynamic_aggregates', operations: '(* 2 (metric cpu_util mean))',
+                    resource_type: 'generic',
+                    resource_search: 'server_group="autoscalig_group"',
+                    groupby: 'host,project_id',
+                    label: '${host} - ${project_id} - ${id} - ${metric} - ${aggregation}', fill: 102 }],
+            interval: '1s'
+        };
+        var url_expected_measure = '/v1/aggregates?details=true&end=2014-04-20T03:20:10.000Z&fill=102&start=2014-04-10T03:20:10.000Z' +
+            '&stop=2014-04-20T03:20:10.000Z&groupby=host&groupby=project_id';
+        // NOTE(sileht): CONTINUE HERE
+        var response_measure = [{
+                "group": {
+                    "host": "compute1",
+                    "project_id": "project1",
+                },
+                "measures": {
+                    "references": [
+                        {
+                            "host": "compute1",
+                            "id": "6868da77-fa82-4e67-aba9-270c5ae8cbca",
+                            "project_id": "project1",
+                        },
+                        {
+                            "host": "compute1",
+                            "id": "f898ba55-bbea-460f-985c-3d1243348304",
+                            "project_id": "project1",
+                        }
+                    ],
+                    "measures": {
+                        "6868da77-fa82-4e67-aba9-270c5ae8cbca": {
+                            "cpu_util": {
+                                "mean": [
+                                    ["2014-10-06T14:33:57+00:00", "60.0", "43.1"],
+                                    ["2014-10-06T14:34:12+00:00", "60.0", "12"],
+                                    ["2014-10-06T14:34:20+00:00", "60.0", "2"],
+                                ]
+                            }
+                        },
+                        "f898ba55-bbea-460f-985c-3d1243348304": {
+                            "cpu_util": {
+                                "mean": [
+                                    ["2014-10-06T14:33:57+00:00", "60.0", "22.1"],
+                                    ["2014-10-06T14:34:12+00:00", "60.0", "3"],
+                                    ["2014-10-06T14:34:20+00:00", "60.0", "30"],
+                                ]
+                            }
+                        }
+                    }
+                }
+            }, {
+                "group": {
+                    "host": "compute2",
+                    "project_id": "project2"
+                },
+                "measures": {
+                    "references": [
+                        {
+                            "host": "compute2",
+                            "id": "ea95c765-8430-4185-9c5b-1b382e510554",
+                            "project_id": "project2",
+                        }
+                    ],
+                    "measures": {
+                        "ea95c765-8430-4185-9c5b-1b382e510554": {
+                            "cpu_util": {
+                                "mean": [
+                                    ["2014-10-06T14:33:57+00:00", "60.0", "43.1"],
+                                    ["2014-10-06T14:34:12+00:00", "60.0", "12"],
+                                    ["2014-10-06T14:34:20+00:00", "60.0", "2"],
+                                ]
+                            }
+                        },
+                    }
+                }
+            }];
+        var results;
+        beforeEach(function () {
+            $httpBackend.expect('POST', url_expected_measure).respond(response_measure);
+            ds.query(query).then(function (data) { results = data; });
+            $httpBackend.flush();
+        });
+        it("nothing more", function () {
+            $httpBackend.verifyNoOutstandingExpectation();
+            $httpBackend.verifyNoOutstandingRequest();
+        });
+        it('should return series list', function () {
+            expect(results.data.length).to.be(3);
+            expect(results.data[0].target).to.be('compute1 - project1 - 6868da77-fa82-4e67-aba9-270c5ae8cbca - cpu_util - mean');
+            expect(results.data[1].target).to.be('compute1 - project1 - f898ba55-bbea-460f-985c-3d1243348304 - cpu_util - mean');
+            expect(results.data[2].target).to.be('compute2 - project2 - ea95c765-8430-4185-9c5b-1b382e510554 - cpu_util - mean');
+            expect(results.data[0].datapoints[0][0]).to.be('43.1');
+            expect(results.data[0].datapoints[0][1]).to.be(1412606037000);
+            expect(results.data[0].datapoints[1][0]).to.be('12');
+            expect(results.data[0].datapoints[1][1]).to.be(1412606052000);
+            expect(results.data[0].datapoints[2][0]).to.be('2');
+            expect(results.data[0].datapoints[2][1]).to.be(1412606060000);
+        });
+    });
+    describe('Dynamic aggregations resource search aggregated', function () {
+        var query = {
+            range: { from: moment.utc([2014, 3, 10, 3, 20, 10]), to: moment.utc([2014, 3, 20, 3, 20, 10]) },
+            targets: [{ queryMode: 'dynamic_aggregates', operations: '(* 2 (metric cpu_util mean))',
+                    resource_type: 'generic',
+                    resource_search: 'server_group="autoscalig_group"',
+                    label: '${host} - ${display_name} - ${metric} - ${aggregation}', fill: 102 }],
+            interval: '1s'
+        };
+        var url_expected_measure = '/v1/aggregates?details=true&end=2014-04-20T03:20:10.000Z&fill=102&start=2014-04-10T03:20:10.000Z' +
+            '&stop=2014-04-20T03:20:10.000Z';
+        // NOTE(sileht): CONTINUE HERE
+        var response_measure = {
+            "references": [
+                {
+                    "display_name": "myfirstvm",
+                    "host": "compute1",
+                    "id": "6868da77-fa82-4e67-aba9-270c5ae8cbca",
+                    "image_ref": "http://image",
+                    "type": "instance",
+                    "server_group": "autoscalig_group",
+                    "metrics": { "cpu_util": "1634173a-e3b8-4119-9eba-fa9a4d971c3b" }
+                },
+                {
+                    "display_name": "mysecondvm",
+                    "host": "compute3",
+                    "id": "f898ba55-bbea-460f-985c-3d1243348304",
+                    "image_ref": "http://image",
+                    "type": "instance",
+                    "server_group": "autoscalig_group",
+                    "metrics": { "cpu_util": "58b233f4-65ba-4aeb-97ba-b8bc0feec97e",
+                        "cpu_time": "6ff95458-97b4-4b08-af03-7d18b05d277e" }
+                }
+            ],
+            "measures": {
+                "aggregated": [
+                    ["2014-10-06T14:33:57+00:00", "60.0", "43.1"],
+                    ["2014-10-06T14:34:12+00:00", "60.0", "12"],
+                    ["2014-10-06T14:34:20+00:00", "60.0", "2"],
+                ]
+            }
+        };
+        var results;
+        beforeEach(function () {
+            $httpBackend.expect('POST', url_expected_measure).respond(response_measure);
+            ds.query(query).then(function (data) { results = data; });
+            $httpBackend.flush();
+        });
+        it("nothing more", function () {
+            $httpBackend.verifyNoOutstandingExpectation();
+            $httpBackend.verifyNoOutstandingRequest();
+        });
+        it('should return series list', function () {
+            expect(results.data.length).to.be(1);
+            expect(results.data[0].target).to.be('${host} - ${display_name} - aggregated - ');
+            expect(results.data[0].datapoints[0][0]).to.be('43.1');
+            expect(results.data[0].datapoints[0][1]).to.be(1412606037000);
+            expect(results.data[0].datapoints[1][0]).to.be('12');
+            expect(results.data[0].datapoints[1][1]).to.be(1412606052000);
+            expect(results.data[0].datapoints[2][0]).to.be('2');
+            expect(results.data[0].datapoints[2][1]).to.be(1412606060000);
+        });
+    });
     describe('Dynamic aggregations resource search', function () {
         var query = {
             range: { from: moment.utc([2014, 3, 10, 3, 20, 10]), to: moment.utc([2014, 3, 20, 3, 20, 10]) },
@@ -651,6 +915,33 @@ describe('GnocchiDatasource', function () {
         });
     });
     describe("metricFindQuery resource", function () {
+        var url_expected_search_resources = "/v1/search/resource/instance?attrs=id";
+        var response_search_resources = [
+            {
+                "id": "6868da77-fa82-4e67-aba9-270c5ae8cbca"
+            },
+            {
+                "id": "f898ba55-bbea-460f-985c-3d1243348304"
+            }
+        ];
+        var results;
+        beforeEach(function () {
+            $httpBackend.expect('GET', "/").respond({ "build": "4.2.0" });
+            $httpBackend.expect('POST', url_expected_search_resources).respond(response_search_resources);
+            ds.metricFindQuery('resources(instance, id, {"=": {"id": "foobar"}})').then(function (data) { results = data; });
+            $httpBackend.flush();
+        });
+        it("nothing more", function () {
+            $httpBackend.verifyNoOutstandingExpectation();
+            $httpBackend.verifyNoOutstandingRequest();
+        });
+        it('should success', function () {
+            expect(results.length).to.be(2);
+            expect(results[0].text).to.be("6868da77-fa82-4e67-aba9-270c5ae8cbca");
+            expect(results[1].text).to.be("f898ba55-bbea-460f-985c-3d1243348304");
+        });
+    });
+    describe("metricFindQuery resource without attrs parameter", function () {
         var url_expected_search_resources = "/v1/search/resource/instance";
         var response_search_resources = [
             {
@@ -674,6 +965,7 @@ describe('GnocchiDatasource', function () {
         ];
         var results;
         beforeEach(function () {
+            $httpBackend.expect('GET', "/").respond({ "build": "4.1.99" });
             $httpBackend.expect('POST', url_expected_search_resources).respond(response_search_resources);
             ds.metricFindQuery('resources(instance, id, {"=": {"id": "foobar"}})').then(function (data) { results = data; });
             $httpBackend.flush();
@@ -861,6 +1153,20 @@ describe('GnocchiDatasource', function () {
         it('resource_search', function () {
             var target = { 'resource_search': '', 'queryMode': 'resource_search', 'metric_name': '' };
             expect(function () { ds.checkMandatoryFields(target); }).to.throwException(/Query, Metric regex must be filled/);
+        });
+    });
+    describe('build attribute parameter', function () {
+        it('complex display attribute', function () {
+            var value_attribute = 'id';
+            var display_attribute = '$name $f$g$$ ${foo_bar-baz}${{} -${id}%';
+            expect(ds.buildAttributeParam(value_attribute, display_attribute))
+                .to.eql(['name', 'f', 'g', 'foo_bar-baz', 'id']);
+        });
+        it('empty display attribute', function () {
+            var value_attribute = 'id';
+            var display_attribute = '';
+            expect(ds.buildAttributeParam(value_attribute, display_attribute))
+                .to.eql(['id']);
         });
     });
 });

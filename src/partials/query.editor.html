@@ -8,7 +8,7 @@
         </div>
     </div>
     <div class="gf-form-inline">
-        <div class="gf-form max-width" ng-if="['resource', 'resource_search', 'resource_aggregation', 'dynamic_aggregates'].indexOf(ctrl.target.queryMode) >= 0">
+        <div class="gf-form max-width" ng-if="['resource', 'resource_search', 'resource_groupby', 'resource_aggregation', 'dynamic_aggregates'].indexOf(ctrl.target.queryMode) >= 0">
             <label class="gf-form-label query-keyword width-8">Resource type</label>
             <div class="gf-form-select-wrapper">
                 <select class="gf-form-input gf-size-auto" ng-model="ctrl.target.resource_type" ng-options="f for f in ctrl.resource_types" ng-change="ctrl.refresh()"></select>
@@ -18,10 +18,14 @@
             <input ng-if="['dynamic_aggregates'].indexOf(ctrl.target.queryMode) < 0" type="text" class="gf-form-input" ng-model="ctrl.target.metric_name" bs-typeahead="ctrl.suggestMetricNames" spellcheck='false' placeholder="metric" data-min-length=0 ng-model-onblur ng-keyup="cancel($event)" ng-change="ctrl.refresh()">
         </div>
     </div>
-    <div ng-if="['resource_search', 'resource_aggregation', 'dynamic_aggregates'].indexOf(ctrl.target.queryMode) >= 0" class="gf-form-inline">
+    <div ng-if="['resource_search', 'resource_groupby', 'resource_aggregation', 'dynamic_aggregates'].indexOf(ctrl.target.queryMode) >= 0" class="gf-form-inline">
         <div class="gf-form max-width">
             <label class="gf-form-label query-keyword width-8">Query</label>
             <input type="text" class="gf-form-input" ng-model="ctrl.target.resource_search" spellcheck='false' placeholder="attribute1='value' and attribute2 like '%contain%'" data-min-length=0 ng-model-onblur ng-keyup="cancel($event)" ng-change="ctrl.refresh()">
+        </div>
+        <div class="gf-form max-width" ng-if="['resource_groupby', 'dynamic_aggregates'].indexOf(ctrl.target.queryMode) >= 0">
+            <label class="gf-form-label query-keyword width-8">Group By</label>
+            <input type="text" class="gf-form-input" ng-model="ctrl.target.groupby" spellcheck='false' placeholder="attributes separated by ," bs-typehead="ctrl.suggestGroupBy" data-min-length=0 ng-model-onblur ng-keyup="cancel($event)" ng-change="ctrl.refresh()">
         </div>
     </div>
     <div ng-if="['dynamic_aggregates'].indexOf(ctrl.target.queryMode) >= 0" class="gf-form-inline">
@@ -51,19 +55,19 @@
             <label class="gf-form-label query-keyword width-8">Aggregator</label>
             <gf-form-dropdown css-class="width-12" allow-custom="true" model="ctrl.target.aggregator" get-options="ctrl.getAggregators(false)" on-change="ctrl.setAggregator($option)"></gf-form-dropdown>
         </div>
-        <div class="gf-form" ng-if="['resource_aggregation'].indexOf(ctrl.target.queryMode) >= 0">
+        <div class="gf-form" ng-if="['resource_aggregation', 'resource_groupby'].indexOf(ctrl.target.queryMode) >= 0">
             <label class="gf-form-label query-keyword width-8">Reaggregator</label>
             <gf-form-dropdown css-class="width-12" allow-custom="true" model="ctrl.target.reaggregator" get-options="ctrl.getAggregators(true)" on-change="ctrl.setReaggregator($option)"></gf-form-dropdown>
         </div>
-        <div class="gf-form max-width-20" ng-if="['resource_aggregation', 'dynamic_aggregates'].indexOf(ctrl.target.queryMode) >= 0">
+        <div class="gf-form max-width-20" ng-if="['resource_groupby', 'resource_aggregation', 'dynamic_aggregates'].indexOf(ctrl.target.queryMode) >= 0">
             <label class="gf-form-label query-keyword width-16">Percent of needed overlap</label>
             <input type="text" class="gf-form-input" ng-model="ctrl.target.needed_overlap" spellcheck='false' placeholder="0" data-min-length=0 ng-model-onblur ng-keyup="cancel($event)" ng-change="ctrl.refresh()">
         </div>
-        <div class="gf-form max-width-20" ng-if="['resource_aggregation', 'dynamic_aggregates'].indexOf(ctrl.target.queryMode) >= 0">
+        <div class="gf-form max-width-20" ng-if="['resource_groupby', 'resource_aggregation', 'dynamic_aggregates'].indexOf(ctrl.target.queryMode) >= 0">
             <label class="gf-form-label query-keyword width-16">Fill</label>
             <input type="text" class="gf-form-input" ng-model="ctrl.target.fill" spellcheck='false' placeholder="0" data-min-length=0 ng-model-onblur ng-keyup="cancel($event)" ng-change="ctrl.refresh()">
         </div>
-        <div class="gf-form max-width-20" ng-if="['resource_aggregation', 'dynamic_aggregates'].indexOf(ctrl.target.queryMode) < 0">
+        <div class="gf-form max-width-20" ng-if="['resource_groupby', 'resource_aggregation', 'dynamic_aggregates'].indexOf(ctrl.target.queryMode) < 0">
             <label class="gf-form-label query-keyword width-16">Missing datapoints as zero</label>
             <gf-form-switch class="gf-form" label-class="width-5" checked="ctrl.target.draw_missing_datapoint_as_zero" on-change="ctrl.refresh()"></gf-form-switch>
         </div>

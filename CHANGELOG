@@ -1,3 +1,8 @@
+Version 1.6.3
+
+* Only retrieve resource attributes needed by the graph
+* Allow to groupby "Dynamic Aggregates" and "Resource search"
+
 Version 1.6.2
 
 * Use a dropdown for resource types

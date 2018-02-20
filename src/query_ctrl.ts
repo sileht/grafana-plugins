@@ -21,6 +21,7 @@ export class GnocchiDatasourceQueryCtrl {
   suggestResourceIDs: any;
   suggestMetricIDs: any;
   suggestMetricNames: any;
+  suggestGroupBy: any;
 
   constructor(public $scope, private $injector) {
     this.$scope = $scope;
@@ -28,6 +29,8 @@ export class GnocchiDatasourceQueryCtrl {
 
     this.queryModes = [
         {text: 'resource search', value: 'resource_search'},
+        // Not release yet
+        // {text: 'resource search (group by)', value: 'resource_groupby'},
         {text: 'resource search (aggregated measurements)', value: 'resource_aggregation'},
         {text: 'resource ID and metric name (deprecated)', value: 'resource'},
         {text: 'metric ID', value: 'metric'}
@@ -35,7 +38,7 @@ export class GnocchiDatasourceQueryCtrl {
 
     this.datasource.requireVersion("4.1.1").then(() => {
         this.queryModes.splice(0, 0,
-            {text: 'dynamic aggregates', value: 'dynamic_aggregates'}
+            {text: 'dynamic aggregates (Recommended)', value: 'dynamic_aggregates'}
         );
     });
 
@@ -74,6 +77,10 @@ export class GnocchiDatasourceQueryCtrl {
 
     this.suggestResourceIDs = (query, callback) => {
       this.datasource.performSuggestQuery(query, 'resources', this.target).then(callback);
+    };
+
+    this.suggestGroupBy = (query, callback) => {
+      this.datasource.performSuggestQuery(query, 'groupby', this.target).then(callback);
     };
 
     this.suggestMetricIDs = (query, callback)  => {

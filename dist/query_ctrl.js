@@ -11,12 +11,14 @@ var GnocchiDatasourceQueryCtrl = /** @class */ (function () {
         this.panel = this.panelCtrl.panel;
         this.queryModes = [
             { text: 'resource search', value: 'resource_search' },
+            // Not release yet
+            // {text: 'resource search (group by)', value: 'resource_groupby'},
             { text: 'resource search (aggregated measurements)', value: 'resource_aggregation' },
             { text: 'resource ID and metric name (deprecated)', value: 'resource' },
             { text: 'metric ID', value: 'metric' }
         ];
         this.datasource.requireVersion("4.1.1").then(function () {
-            _this.queryModes.splice(0, 0, { text: 'dynamic aggregates', value: 'dynamic_aggregates' });
+            _this.queryModes.splice(0, 0, { text: 'dynamic aggregates (Recommended)', value: 'dynamic_aggregates' });
         });
         this.datasource.getResourceTypes().then(function (resource_types) {
             _this.resource_types = resource_types;
@@ -49,6 +51,9 @@ var GnocchiDatasourceQueryCtrl = /** @class */ (function () {
         }
         this.suggestResourceIDs = function (query, callback) {
             _this.datasource.performSuggestQuery(query, 'resources', _this.target).then(callback);
+        };
+        this.suggestGroupBy = function (query, callback) {
+            _this.datasource.performSuggestQuery(query, 'groupby', _this.target).then(callback);
         };
         this.suggestMetricIDs = function (query, callback) {
             _this.datasource.performSuggestQuery(query, 'metrics', _this.target).then(callback);

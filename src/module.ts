@@ -1,6 +1,6 @@
 
-import GnocchiDatasource from './datasource';
-import {GnocchiDatasourceQueryCtrl} from './query_ctrl';
+import { GnocchiDatasource } from './datasource';
+import { GnocchiDatasourceQueryCtrl } from './query_ctrl';
 
 class GnocchiConfigCtrl {
     static templateUrl = 'partials/config.html';

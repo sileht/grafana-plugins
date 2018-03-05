@@ -40,7 +40,7 @@ module.exports = function(grunt) {
       sources: {
         cwd: 'src',
         expand: true,
-        src: ['**/*.html'],
+        src: ['**/*.html', '**/*.js'],
         dest: 'dist/'
       },
       staticContent: {

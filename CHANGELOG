@@ -2,6 +2,9 @@ Version 1.6.3
 
 * Only retrieve resource attributes needed by the graph
 * Allow to groupby "Dynamic Aggregates" and "Resource search"
+* Autocompletion for Query, Operations, Metric names and GroupbBy
+* Partial syntax highlighting for Query and Operations
+* New error reporting handling, label become red when field in invalid.
 
 Version 1.6.2
 

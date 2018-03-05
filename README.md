@@ -1,6 +1,6 @@
 # Grafana Gnocchi datasource [![Travis CI](https://travis-ci.org/gnocchixyz/grafana-gnocchi-datasource.png?branch=master)](https://travis-ci.org/gnocchixyz/grafana-gnocchi-datasource)
 
-Gnocchi datasource for Grafana 3 and 4
+Gnocchi datasource for Grafana >= 4
 
 ![](https://raw.githubusercontent.com/gnocchixyz/grafana-gnocchi-datasource/master/docs/collectd-dashboard.png)
 
@@ -39,25 +39,19 @@ This works only if Access = Direct, and CORS is properly configured on Keystone 
 
 ## Query editor
 
-Open a graph in edit mode by click the title.
+The editor leverage thes Dynamic Aggregate API of Gnocchi:
 
-The editor have 4 modes to retrieves metrics:
+* Select first the *resource type* you are looking for.
+* Create a *query* to select all resources you need.
+* Create an *operation* that selects metric and does math on/between them.
+* Set *label* to name each graph with text or with resource attributes.
 
-* Dynamic aggregates (recommended way):
-  Create a *query* to select all resources you need.
-  Create an *operation* that select metric and do math on/between them.
-  Set *label* to name each graph with text or with resource attributes.
+The `Query` format is documented as STRING format in *Resource search* section of [Gnocchi documentations](http://gnocchi.xyz/rest.html#search).
+The `Operation` format is documented in *Dynamic Aggregates* section of [Gnocchi documentations](https://gnocchi.xyz/rest.html#list-of-supported-operations).
 
-  ![](https://raw.githubusercontent.com/gnocchixyz/grafana-gnocchi-datasource/master/docs/grafana_dynamic.png)
+  ![](https://raw.githubusercontent.com/gnocchixyz/grafana-gnocchi-datasource/master/docs/grafana-dynamic.png)
 
-Other mode are mainly here old Gnocchi version that doesn't support *Dynamic aggregates*
-
-Each mode also have the aggregator method to use to get datapoints of the metrics.
-
-For details of `Query` format, please refer to the Gnocchi and Gnocchi client documentations.
-
-- [Search for resource - Gnocchi client Documentation](http://gnocchi.xyz/gnocchiclient/shell.html#gnocchi-resource-search) for expression format
-- [Search for resource - Gnocchi Documentation](http://gnocchi.xyz/rest.html#searching-for-resources) for the raw json format.
+Other *Query type* exists for special use case and for old Gnocchi version that doesn't support *Dynamic aggregates*
 
 ## Labels
 

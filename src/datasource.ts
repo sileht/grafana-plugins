@@ -703,8 +703,17 @@ export default class GnocchiDatasource {
             mandatory.push("Metric regex");
           }
           break;
+        case "dynamic_aggregates":
+          if (!target.resource_search) {
+            mandatory.push("Query");
+          }
+          if (!target.operations) {
+            mandatory.push("Operations");
+          }
+          break;
         case "resource_aggregation":
         case "resource_search":
+        case "resource_groupby":
           if (!target.resource_search) {
             mandatory.push("Query");
           }

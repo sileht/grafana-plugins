@@ -1,8 +1,10 @@
+
 import {Datasource} from "../module";
 import BackendSrvMock from "./mocks/backendsrv";
 import TemplateSrvMock from "./mocks/templatesrv";
 import * as moment from "moment";
 import * as angular from "angular";
+
 
 describe('GnocchiDatasource', function() {
   var ds = null;
@@ -519,7 +521,7 @@ describe('GnocchiDatasource', function() {
   describe('Resource search GroupBy', function() {
     var query = {
       range: { from: moment.utc([2014, 3, 10, 3, 20, 10]), to: moment.utc([2014, 3, 20, 3, 20, 10]) },
-      targets: [{ hide: false, queryMode: 'resource_groupby', resource_search: 'server_group="autoscaling_group"',
+      targets: [{ hide: false, queryMode: 'resource_aggregation', resource_search: 'server_group="autoscaling_group"',
         resource_type: 'instance', label: '$host - $project_id', metric_name: 'cpu_util', aggregator: 'max',
           groupby: 'host,project_id', reaggregator: 'mean'
       }],
@@ -1227,63 +1229,8 @@ describe('GnocchiDatasource', function() {
       ds.getResourceTypes().then(function(data) { results = data ; });
       $httpBackend.flush();
       expect(results.length).to.be(2);
-      expect(results[0]).to.be('generic');
-      expect(results[1]).to.be('instance');
-    });
-  });
-
-  describe('suggestMetricIDs', function() {
-    var results;
-    it('should return metric ids', function() {
-      $httpBackend.expect('GET', "/v1/metric").respond(metrics);
-      ds.performSuggestQuery("foobar", "metrics", {}).then(function(data) { results = data ; });
-      $httpBackend.flush();
-      expect(results.length).to.be(2);
-      expect(results[0]).to.be('b8c73d22-d944-47d9-9d84-1e7f618c25e1');
-      expect(results[1]).to.be('86adbe6c-22d7-4a86-9ab7-e8d112f6cb79');
-    });
-  });
-
-  describe('suggestResourceIDs', function() {
-    var results;
-    it('should return resource ids', function() {
-      $httpBackend.expect('GET', "/v1/resource/generic").respond(resources);
-      ds.performSuggestQuery("foobar", "resources", {}).then(function(data) { results = data ; });
-      $httpBackend.flush();
-      expect(results.length).to.be(2);
-      expect(results[0]).to.be('cba8d3d5-d5e1-4692-bcfe-d77feaf01d7e');
-      expect(results[1]).to.be('9b4f6da9-4e67-4cfd-83bd-fb4b8bcc8dd8');
-    });
-  });
-
-  describe('suggestMetricNames', function() {
-    var results;
-    it('should return resource ids', function() {
-      var target = {'resource_id': 'cba8d3d5-d5e1-4692-bcfe-d77feaf01d7e', 'queryMode': 'resource'};
-      $httpBackend.expect('GET', "/v1/resource/generic/cba8d3d5-d5e1-4692-bcfe-d77feaf01d7e").respond(resources[0]);
-      ds.performSuggestQuery("foobar", "metric_names", target).then(function(data) { results = data ; });
-      $httpBackend.flush();
-      expect(results.length).to.be(2);
-      expect(results[0]).to.be('temperature');
-      expect(results[1]).to.be('cpu_util');
-    });
-  });
-
-
-  describe('validate query missing field', function() {
-    it('resource', function() {
-      var target = {'resource_id': '', 'queryMode': 'resource', 'metric_name': ''};
-      expect(function() {ds.checkMandatoryFields(target);}).to.throwException(/Resource ID, Metric regex must be filled/);
-    });
-
-    it('metric', function() {
-      var target = {'metric_id': '', 'queryMode': 'metric'};
-      expect(function() {ds.checkMandatoryFields(target);}).to.throwException(/Metric ID must be filled/);
-    });
-
-    it('resource_search', function() {
-      var target = {'resource_search': '', 'queryMode': 'resource_search', 'metric_name': ''};
-      expect(function() {ds.checkMandatoryFields(target);}).to.throwException(/Query, Metric regex must be filled/);
+      expect(results[0]['name']).to.be('generic');
+      expect(results[1]['name']).to.be('instance');
     });
   });
 

@@ -1,4 +1,4 @@
-Version 1.6.3
+Version 1.7.0
 
 * Only retrieve resource attributes needed by the graph
 * Allow to groupby "Dynamic Aggregates" and "Resource search"

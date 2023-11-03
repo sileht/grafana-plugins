@@ -76,13 +76,13 @@ var GnocchiDatasource = /** @class */ (function () {
                     'start': options.range.from.toISOString(),
                     'end': null,
                     'stop': null,
-                    'granularity': null,
-                    'filter': null,
-                    'needed_overlap': null,
-                    'fill': null,
-                    'details': null,
-                    'groupby': null,
-                    'metric': null
+             //     'granularity': null,
+             //     'filter': null,
+             //     'needed_overlap': null,
+             //     'fill': null,
+             //     'details': null,
+             //     'groupby': null,
+             //     'metric': null
                 }
             };
             if (options.range.to) {

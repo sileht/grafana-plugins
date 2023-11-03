@@ -1,8 +1,8 @@
 {
 
-  "name": "Gnocchi",
+  "name": "smgnocchi",
   "type": "datasource",
-  "id": "gnocchixyz-gnocchi-datasource",
+  "id": "smgnocchi-gnocchi-datasource",
 
   "defaultMatchFormat": "glob",
   "metrics": true,
@@ -11,7 +11,7 @@
   "staticRoot": ".",
 
   "info": {
-    "description": "Gnocchi Datasource",
+    "description": "smgnocchi Datasource",
     "author": {
       "name": "Mehdi ABAAKOUK",
       "url": "https://github.com/gnocchixyz"
@@ -22,12 +22,12 @@
     },
     "links": [
       {"name": "Gnocchi", "url": "http://gnocchi.xyz"},
-      {"name": "GitHub", "url": "https://github.com/gnocchixyz/grafana-gnocchi-datasource"},
+      {"name": "GitHub", "url": "https://github.com/hoeniu/grafana-gnocchi-datasource"},
       {"name": "Apache 2.0", "url": "http://www.apache.org/licenses/LICENSE-2.0"}
     ],
     "screenshots": [
     ],
-    "version": "1.7.1",
+    "version": "1.9.0",
     "updated": "2018-03-20"
   },
 
